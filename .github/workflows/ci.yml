@@ -1,0 +1,54 @@
+name: Fullstack CI
+
+on:
+  push:
+    branches: [ "main" ] # mainブランチにプッシュされたら実行
+  pull_request:
+    branches: [ "main" ] # PRが作成・更新されたら実行
+
+jobs:
+  # --- バックエンドのビルドとテスト ---
+  backend-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend # backendディレクトリで実行
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle' # Gradleの依存関係をキャッシュして高速化
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build and Test with Gradle
+        run: ./gradlew clean build
+
+  # --- フロントエンドのビルドとテスト ---
+  frontend-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend # frontendディレクトリで実行
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm' # node_modulesをキャッシュして高速化
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type Check and Lint
+        run: |
+          npm run lint
+          # 型定義の不整合があればここでビルドが止まる
+          npm run build 
