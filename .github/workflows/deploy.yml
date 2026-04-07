@@ -19,13 +19,6 @@
         id-token: write # OIDC認証を使用する場合に必要
 
       steps:
-        - name: Debug ECS Info
-          run: |
-            echo "Target Cluster: ${{ secrets.ECS_CLUSTER_NAME }}"
-            echo "Target Service: ${{ secrets.ECS_SERVICE_NAME }}"
-            aws ecs list-clusters
-            aws sts get-caller-identity
-
 
         - name: Checkout
           uses: actions/checkout@v4
@@ -36,6 +29,13 @@
             aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ env.AWS_REGION }}
+
+        - name: Debug ECS Info
+          run: |
+            echo "Target Cluster: ${{ secrets.ECS_CLUSTER_NAME }}"
+            echo "Target Service: ${{ secrets.ECS_SERVICE_NAME }}"
+            aws ecs list-clusters
+            aws sts get-caller-identity
 
         - name: Login to Amazon ECR
           id: login-ecr
