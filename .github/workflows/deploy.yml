@@ -70,6 +70,7 @@
             container-port: 8080
             min-task-count: 1  # 起動するタスクの数を指定
             max-task-count: 1
+            wait-for-minutes: 5
             # ★これを追加（ECSがECRからイメージを引くための権限ロール）
             execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
             # ★これを追加
