@@ -9,10 +9,10 @@
 
   env:
     AWS_REGION: ap-northeast-1
-    ECR_REPOSITORY_BACKEND: my-api-repo   # バックエンド用リポジトリ名
-    ECR_REPOSITORY_FRONTEND: my-web-repo  # フロントエンド用リポジトリ名
-    SERVICE_NAME_BACKEND: backend-service # AWS上のサービス名
-    SERVICE_NAME_FRONTEND: frontend-service
+    ECR_REPOSITORY_BACKEND: my-app-backend    # バックエンド用リポジトリ名
+    ECR_REPOSITORY_FRONTEND: my-app-frontend  # フロントエンド用リポジトリ名
+    SERVICE_NAME_BACKEND: backend-service     # AWS上のサービス名
+    SERVICE_NAME_FRONTEND: frontend-service   # AWS上のサービス名
 
   jobs:
     deploy:
