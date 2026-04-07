@@ -1,11 +1,11 @@
 #Build stage
-FROM eclipse-temurin:17-jdk-jammy AS build
+FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
 COPY . .
 RUN ./gradlew bootJar
 
 #Run stage
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:21-jammy
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 EXPOSE 8080
