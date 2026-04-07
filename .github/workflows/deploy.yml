@@ -65,7 +65,7 @@
           uses: aws-actions/amazon-ecs-deploy-express-service@v1
           with:
             cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-            service: "backend-service" # サービス名
+            service-name: "backend-service" # サービス名
             image: ${{ steps.build-backend.outputs.image }} # ビルドしたイメージ
 
         # --- ここから「フロントエンド」のデプロイ ---
@@ -85,5 +85,5 @@
           uses: aws-actions/amazon-ecs-deploy-express-service@v1
           with:
             cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-            service: "frontend-service"
+            service-name: "frontend-service"
             image: ${{ steps.build-frontend.outputs.image }}
