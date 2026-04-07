@@ -33,7 +33,7 @@
         - name: Debug ECS Info
           run: |
             echo "Target Cluster: ${{ secrets.ECS_CLUSTER_NAME }}"
-            echo "Target Service: ${{ secrets.ECS_SERVICE_NAME }}"
+            echo "Target Service: backend-service"
             aws ecs list-clusters
             aws sts get-caller-identity
 
