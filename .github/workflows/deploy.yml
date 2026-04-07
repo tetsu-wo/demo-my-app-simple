@@ -110,6 +110,7 @@
             execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
             # ★これを追加
             infrastructure-role-arn: ${{ secrets.ECS_INFRASTRUCTURE_ROLE_ARN }}
+            health-check-path: /health
             # --- ↓ 新規作成時に必須となる可能性が高い項目 ---
             cpu: 1024
             memory: 2048
