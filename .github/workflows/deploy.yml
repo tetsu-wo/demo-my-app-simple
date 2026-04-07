@@ -77,6 +77,9 @@
             cpu: 256
             memory: 512
             vpc-id: ${{ secrets.VPC_ID }} # vpc-xxxxxx 形式
+            subnets: ${{ secrets.SUBNET_IDS }}  # "subnet-xxxx,subnet-yyyy" の形式
+            security-groups: ${{ secrets.SECURITY_GROUP_IDS }}  # "sg-xxxx" の形式
+            assign-public-ip: true  # パブリックサブネットを使う場合は true
 
         # --- ここから「フロントエンド」のデプロイ ---
 #        - name: Deploy Frontend to ECS Express Mode (Create or Update)
