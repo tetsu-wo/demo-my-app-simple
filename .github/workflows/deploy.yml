@@ -67,6 +67,8 @@
             cluster: ${{ secrets.ECS_CLUSTER_NAME }}
             service-name: "backend-service" # サービス名
             image: ${{ steps.build-backend.outputs.image }} # ビルドしたイメージ
+            # ★これを追加（ECSがECRからイメージを引くための権限ロール）
+            execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
 
         # --- ここから「フロントエンド」のデプロイ ---
 #        - name: Deploy Frontend to ECS Express Mode (Create or Update)
@@ -87,3 +89,5 @@
             cluster: ${{ secrets.ECS_CLUSTER_NAME }}
             service-name: "frontend-service"
             image: ${{ steps.build-frontend.outputs.image }}
+            # ★これを追加（ECSがECRからイメージを引くための権限ロール）
+            execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
