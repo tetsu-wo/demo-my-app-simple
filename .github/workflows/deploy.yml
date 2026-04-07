@@ -67,6 +67,7 @@
             cluster: ${{ secrets.ECS_CLUSTER_NAME }}
             service-name: "backend-service" # サービス名
             image: ${{ steps.build-backend.outputs.image }} # ビルドしたイメージ
+            launch-type: FARGATE
             desired-count: 1  # 起動するタスクの数を指定
             # ★これを追加（ECSがECRからイメージを引くための権限ロール）
             execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
