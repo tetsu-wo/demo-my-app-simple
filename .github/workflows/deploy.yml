@@ -69,6 +69,12 @@
             image: ${{ steps.build-backend.outputs.image }} # ビルドしたイメージ
             # ★これを追加（ECSがECRからイメージを引くための権限ロール）
             execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
+            # ★これを追加
+            infrastructure-role-arn: ${{ secrets.ECS_INFRASTRUCTURE_ROLE_ARN }}
+            # --- ↓ 新規作成時に必須となる可能性が高い項目 ---
+            cpu: 256
+            memory: 512
+            vpc-id: ${{ secrets.VPC_ID }} # vpc-xxxxxx 形式
 
         # --- ここから「フロントエンド」のデプロイ ---
 #        - name: Deploy Frontend to ECS Express Mode (Create or Update)
