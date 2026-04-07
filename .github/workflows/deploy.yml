@@ -76,8 +76,8 @@
             # ★これを追加
             infrastructure-role-arn: ${{ secrets.ECS_INFRASTRUCTURE_ROLE_ARN }}
             # --- ↓ 新規作成時に必須となる可能性が高い項目 ---
-            cpu: 256
-            memory: 512
+            cpu: 512
+            memory: 1024
             vpc-id: vpc-0bb82bc8eb168969f # vpc-xxxxxx 形式
             subnets: "subnet-06b7f26151f215ccc,subnet-0ce940b40a21078d0,subnet-0e79077ff070e3a79"  # "subnet-xxxx,subnet-yyyy" の形式
             security-groups: sg-07248ad9614a9fbc0  # "sg-xxxx" の形式
