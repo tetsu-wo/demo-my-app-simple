@@ -2,7 +2,7 @@
 FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
 COPY . .
-RUN ./gradlew bootJar
+RUN ./gradlew bootJar -x test
 
 #Run stage
 FROM eclipse-temurin:21-jammy
