@@ -67,7 +67,22 @@
             docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG
             echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-        # --- ここから「バックエンド」のデプロイ ---
+
+        - name: Network Configuration Check
+          run: |
+            echo "Checking VPC and Subnets..."
+            # 指定したVPCが存在するか確認
+            aws ec2 describe-vpcs --vpc-ids vpc-0bb82bc8eb168969f --region ap-northeast-1
+            
+            # 指定したサブネットが正しいか確認（一つでも間違っていればエラーになります）
+            aws ec2 describe-subnets --subnet-ids "subnet-06b7f26151f215ccc" "subnet-0ce940b40a21078d0" "subnet-0e79077ff070e3a79" --region ap-northeast-1
+            
+            # セキュリティグループがそのVPC内に存在するか確認
+            aws ec2 describe-security-groups --group-ids sg-07248ad9614a9fbc0 --region ap-northeast-1
+          
+          
+          
+          # --- ここから「バックエンド」のデプロイ ---
 #
         - name: Deploy Backend (Create or Update)
           uses: aws-actions/amazon-ecs-deploy-express-service@v1
