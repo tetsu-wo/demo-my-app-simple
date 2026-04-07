@@ -67,7 +67,7 @@
             cluster: ${{ secrets.ECS_CLUSTER_NAME }}
             service-name: "backend-service" # サービス名
             image: ${{ steps.build-backend.outputs.image }} # ビルドしたイメージ
-            container-port: 80
+            container-port: 8080
             desired-count: 1  # 起動するタスクの数を指定
             launch-type: FARGATE
             force-new-deployment: true # 強制的に再適用させる
