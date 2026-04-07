@@ -47,17 +47,17 @@
             docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG
             echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
             
-            # --- フロントエンドのビルドとプッシュ ---
-            - name: Build and Push Frontend Image
-              id: build-frontend
-              env:
-                ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-                IMAGE_TAG: ${{ github.sha }}
-              run: |
-                # フロントエンドのディレクトリに移動してビルドする場合
-                docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG ./frontend
-                docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG
-                echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+        # --- フロントエンドのビルドとプッシュ ---
+        - name: Build and Push Frontend Image
+          id: build-frontend
+          env:
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+            IMAGE_TAG: ${{ github.sha }}
+          run: |
+            # フロントエンドのディレクトリに移動してビルドする場合
+            docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG ./frontend
+            docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG
+            echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
         # --- ここから「バックエンド」のデプロイ ---
         - name: Deploy Backend to ECS Express Mode (Create or Update)
