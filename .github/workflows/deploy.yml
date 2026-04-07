@@ -1,13 +1,18 @@
   name: Deploy to Amazon ECS Express Mode
 
   on:
-    push:
+    workflow_run:
+      workflows: [ "Fullstack CI" ]      # ci.yml 内の "name:" で指定した名前と一致させる
+      types:
+        - completed
       branches: [ "main" ]
 
   env:
-    AWS_REGION: ap-northeast-1                   # お使いのリージョン
-    ECR_REPOSITORY: my-app-repo                   # ECR リポジトリ名
-    ECS_SERVICE_NAME: my-express-service          # Express Mode のサービス名
+    AWS_REGION: ap-northeast-1
+    ECR_REPOSITORY_BACKEND: my-api-repo   # バックエンド用リポジトリ名
+    ECR_REPOSITORY_FRONTEND: my-web-repo  # フロントエンド用リポジトリ名
+    SERVICE_NAME_BACKEND: backend-service # AWS上のサービス名
+    SERVICE_NAME_FRONTEND: frontend-service
 
   jobs:
     deploy:
@@ -31,17 +36,29 @@
           id: login-ecr
           uses: aws-actions/amazon-ecr-login@v2
 
-        - name: Build, tag, and push image to Amazon ECR
-          id: build-image
+        - name: Build and Push Backend Image
+          id: build-backend
           env:
             ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
             IMAGE_TAG: ${{ github.sha }}
           run: |
-            # イメージのビルドとプッシュ
-            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-            docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-            echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+            # バックエンドのディレクトリに移動してビルドする場合
+            docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG ./backend
+            docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG
+            echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
             
+            # --- フロントエンドのビルドとプッシュ ---
+            - name: Build and Push Frontend Image
+              id: build-frontend
+              env:
+                ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+                IMAGE_TAG: ${{ github.sha }}
+              run: |
+                # フロントエンドのディレクトリに移動してビルドする場合
+                docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG ./frontend
+                docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG
+                echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
         # --- ここから「バックエンド」のデプロイ ---
         - name: Deploy Backend to ECS Express Mode (Create or Update)
           run: |
@@ -50,10 +67,10 @@
         
             if [ "$STATUS" = "ACTIVE" ]; then
               echo "Updating existing Backend service..."
-              aws ecs update-express-service --name backend-service --image-uri <バックエンドのイメージURI>
+              aws ecs update-express-service --name backend-service --image-uri ${{ steps.build-backend.outputs.image }}
             else
               echo "Creating new Backend service..."
-              aws ecs create-express-service --name backend-service --image-uri <バックエンドのイメージURI>
+              aws ecs create-express-service --name backend-service --image-uri ${{ steps.build-backend.outputs.image }}
             fi
 
         # --- ここから「フロントエンド」のデプロイ ---
@@ -64,8 +81,8 @@
         
             if [ "$STATUS" = "ACTIVE" ]; then
               echo "Updating existing Frontend service..."
-              aws ecs update-express-service --name frontend-service --image-uri <フロントエンドのイメージURI>
+              aws ecs update-express-service --name frontend-service --image-uri ${{ steps.build-frontend.outputs.image }}
             else
               echo "Creating new Frontend service..."
-              aws ecs create-express-service --name frontend-service --image-uri <フロントエンドのイメージURI>
+              aws ecs create-express-service --name frontend-service --image-uri ${{ steps.build-frontend.outputs.image }}
             fi
