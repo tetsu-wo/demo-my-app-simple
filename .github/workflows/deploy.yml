@@ -68,20 +68,17 @@
             service-name: "backend-service" # サービス名
             image: ${{ steps.build-backend.outputs.image }} # ビルドしたイメージ
             container-port: 8080
-            desired-count: 1  # 起動するタスクの数を指定
-            launch-type: FARGATE
-            force-new-deployment: true # 強制的に再適用させる
+            min-task-count: 1  # 起動するタスクの数を指定
             # ★これを追加（ECSがECRからイメージを引くための権限ロール）
             execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
             # ★これを追加
             infrastructure-role-arn: ${{ secrets.ECS_INFRASTRUCTURE_ROLE_ARN }}
             # --- ↓ 新規作成時に必須となる可能性が高い項目 ---
-            cpu: 512
-            memory: 1024
-            vpc-id: vpc-0bb82bc8eb168969f # vpc-xxxxxx 形式
+            cpu: 256
+            memory: 512
             subnets: "subnet-06b7f26151f215ccc,subnet-0ce940b40a21078d0,subnet-0e79077ff070e3a79"  # "subnet-xxxx,subnet-yyyy" の形式
             security-groups: sg-07248ad9614a9fbc0  # "sg-xxxx" の形式
-            assign-public-ip: true  # パブリックサブネットを使う場合は true
+
 
         # --- ここから「フロントエンド」のデプロイ ---
 #        - name: Deploy Frontend to ECS Express Mode (Create or Update)
