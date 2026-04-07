@@ -91,3 +91,5 @@
             image: ${{ steps.build-frontend.outputs.image }}
             # ★これを追加（ECSがECRからイメージを引くための権限ロール）
             execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
+            # ★これを追加
+            infrastructure-role-arn: ${{ secrets.ECS_INFRASTRUCTURE_ROLE_ARN }}
