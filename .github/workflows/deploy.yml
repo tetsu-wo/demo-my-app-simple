@@ -115,7 +115,7 @@
             cpu: 1024
             memory: 2048
             subnets: "subnet-0527eb43c92632b21,subnet-074f4a7179f8c3dc4"  # "subnet-xxxx,subnet-yyyy" の形式
-            security-groups: "sg-07248ad9614a9fbc0"  # "sg-xxxx" の形式
+            security-groups: "sg-0a5aa02c2a3bf4988"  # "sg-xxxx" の形式
 
 
         # --- ここから「フロントエンド」のデプロイ ---
