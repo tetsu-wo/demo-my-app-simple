@@ -94,28 +94,48 @@
           
           
           # --- ここから「バックエンド」のデプロイ ---
-#
-        - name: Deploy Backend (Create or Update)
-          uses: aws-actions/amazon-ecs-deploy-express-service@v1
+
+        # 4. タスク定義ファイルのイメージタグを更新
+        - name: Fill in the new image ID in the Amazon ECS task definition
+          id: task-def
+          uses: aws-actions/amazon-ecs-render-task-definition@v1
           with:
-            cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-            service-name: "backend-service" # サービス名
-            image: ${{ steps.build-backend.outputs.image }} # ビルドしたイメージ
-            container-port: 8080
-            min-task-count: 1  # 起動するタスクの数を指定
-            max-task-count: 1
+            task-definition: ${{ env.ECS_TASK_DEFINITION }}
+            container-name: ${{ env.CONTAINER_NAME }}
+            image: ${{ steps.build-image.outputs.image }}
+
+        # 5. ECS サービスを更新してデプロイ
+        - name: Deploy Amazon ECS task definition
+          uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+          with:
+            task-definition: ${{ steps.task-def.outputs.task-definition }}
+            service: ${{ env.ECS_SERVICE }}
+            cluster: ${{ env.ECS_CLUSTER }}
+            wait-for-service-stability: true # デプロイ完了まで待機
+
+
+#
+#        - name: Deploy Backend (Create or Update)
+#          uses: aws-actions/amazon-ecs-deploy-express-service@v1
+#          with:
+#            cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+#            service-name: "backend-service" # サービス名
+#            image: ${{ steps.build-backend.outputs.image }} # ビルドしたイメージ
+#            container-port: 8080
+#            min-task-count: 1  # 起動するタスクの数を指定
+#            max-task-count: 1
 #            wait-for-minutes: 5
 #            launch-type: FARGATE # もしWarningが出ても、強制的にFargateを認識させるために有効な場合があります
             # ★これを追加（ECSがECRからイメージを引くための権限ロール）
-            execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
+#            execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
             # ★これを追加
-            infrastructure-role-arn: ${{ secrets.ECS_INFRASTRUCTURE_ROLE_ARN }}
+#            infrastructure-role-arn: ${{ secrets.ECS_INFRASTRUCTURE_ROLE_ARN }}
 #            health-check-path: /health
             # --- ↓ 新規作成時に必須となる可能性が高い項目 ---
-            cpu: 1024
-            memory: 2048
-            subnets: "subnet-0527eb43c92632b21,subnet-074f4a7179f8c3dc4"  # "subnet-xxxx,subnet-yyyy" の形式
-            security-groups: "sg-0a5aa02c2a3bf4988"  # "sg-xxxx" の形式
+#            cpu: 1024
+#            memory: 2048
+#            subnets: "subnet-0527eb43c92632b21,subnet-074f4a7179f8c3dc4"  # "subnet-xxxx,subnet-yyyy" の形式
+#            security-groups: "sg-0a5aa02c2a3bf4988"  # "sg-xxxx" の形式
 
 
         # --- ここから「フロントエンド」のデプロイ ---
