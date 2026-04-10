@@ -70,7 +70,7 @@
             if ! aws ecs describe-services --cluster default --services service-backend | grep -q "ACTIVE"; then
               echo "Service does not exist. Creating..."
               aws ecs create-service \
-                --cluster ${{ env.ECS_CLUSTER }} \
+                --cluster default \
                 --service-name service-backend \
                 --task-definition ${{ steps.task-def.outputs.task-definition }} \
                 --desired-count 1 \
@@ -146,7 +146,7 @@
             # サービスがなければ作成（クラスター確認はbackend側でもやるので念のため）
             if ! aws ecs describe-services --cluster default --services frontend-service | grep -q "ACTIVE"; then
               aws ecs create-service \
-                --cluster ${{ env.ECS_CLUSTER }} \
+                --cluster default \
                 --service-name frontend-service \
                 --task-definition ${{ steps.task-def.outputs.task-definition }} \
                 --desired-count 1 \
