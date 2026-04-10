@@ -51,8 +51,8 @@
             IMAGE_TAG: ${{ github.sha }}
           run: |        
           # ★ここに追加！最新のプログラムをコンパイルしてjarを作る
-#            chmod +x gradlew
-#            ./gradlew clean build -x test
+            chmod +x gradlew
+            ./gradlew clean build -x test
           
           # バックエンドのディレクトリに移動してビルドする場合
             docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG ./backend
@@ -71,19 +71,19 @@
         - name: Ensure ECS Service exists
           run: |
             # 1. クラスターが存在するか確認。なければ作成
-            if ! aws ecs describe-clusters --clusters my-app-default2 | grep -q "ACTIVE"; then
+            if ! aws ecs describe-clusters --clusters my-app-default3 | grep -q "ACTIVE"; then
              echo "Cluster 'default' not found. Creating..."
-             aws ecs create-cluster --cluster my-app-default2
+             aws ecs create-cluster --cluster my-app-default3
             # クラスターが完全に作成されるまで10秒待機
              echo "Waiting for cluster to be active..."
              sleep 10
             fi            
             
             # サービスが存在するか確認。なければ作成するコマンドを実行
-            if ! aws ecs describe-services --cluster my-app-default2 --services service-backend | grep -q "ACTIVE"; then
+            if ! aws ecs describe-services --cluster my-app-default3 --services service-backend | grep -q "ACTIVE"; then
               echo "Service does not exist. Creating..."
               aws ecs create-service \
-                --cluster my-app-default2 \
+                --cluster my-app-default3 \
                 --service-name service-backend \
                 --task-definition backend-task \
                 --desired-count 1 \
@@ -157,18 +157,18 @@
         - name: Ensure Frontend ECS Service exists
           run: |
             # 1. クラスターが存在するか確認。なければ作成
-            if ! aws ecs describe-clusters --clusters my-app-default2 | grep -q "ACTIVE"; then
+            if ! aws ecs describe-clusters --clusters my-app-default3 | grep -q "ACTIVE"; then
              echo "Cluster 'default' not found. Creating..."
-             aws ecs create-cluster --cluster my-app-default2
+             aws ecs create-cluster --cluster my-app-default3
             # クラスターが完全に作成されるまで10秒待機
              echo "Waiting for cluster to be active..."
              sleep 10
             fi               
             
             # サービスがなければ作成（クラスター確認はbackend側でもやるので念のため）
-            if ! aws ecs describe-services --cluster my-app-default2 --services frontend-service | grep -q "ACTIVE"; then
+            if ! aws ecs describe-services --cluster my-app-default3 --services frontend-service | grep -q "ACTIVE"; then
               aws ecs create-service \
-                --cluster my-app-default2 \
+                --cluster my-app-default3 \
                 --service-name frontend-service \
                 --task-definition frontend-task \
                 --desired-count 1 \
