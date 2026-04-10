@@ -75,7 +75,7 @@
                 --task-definition ${{ steps.task-def.outputs.task-definition }} \
                 --desired-count 1 \
                 --launch-type FARGATE \
-                --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
+                --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}"
             else
               echo "Service already exists."
             fi
@@ -151,7 +151,7 @@
                 --task-definition ${{ steps.task-def.outputs.task-definition }} \
                 --desired-count 1 \
                 --launch-type FARGATE \
-                --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNETS }}],securityGroups=[${{ secrets.SG_FRONTEND }}],assignPublicIp=ENABLED}"
+                --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}"
             fi
 
         # 5. ECS サービスを更新してデプロイ
