@@ -100,7 +100,7 @@
           id: task-def
           uses: aws-actions/amazon-ecs-render-task-definition@v1
           with:
-            task-definition: .aws/task-definition.json
+            task-definition: backend/.aws/task-definition.json
             container-name: backend-container
             image: ${{ steps.build-backend.outputs.image }}
 
