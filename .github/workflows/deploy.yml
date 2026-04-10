@@ -72,7 +72,7 @@
               aws ecs create-service \
                 --cluster default \
                 --service-name service-backend \
-                --task-definition ${{ steps.task-def.outputs.task-definition }} \
+                --task-definition backend-task \
                 --desired-count 1 \
                 --launch-type FARGATE \
                 --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}"
@@ -148,7 +148,7 @@
               aws ecs create-service \
                 --cluster default \
                 --service-name frontend-service \
-                --task-definition ${{ steps.task-def.outputs.task-definition }} \
+                --task-definition frontend-task \
                 --desired-count 1 \
                 --launch-type FARGATE \
                 --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}"
