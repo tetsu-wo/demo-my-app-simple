@@ -70,6 +70,9 @@
             if ! aws ecs describe-clusters --clusters default | grep -q "ACTIVE"; then
              echo "Cluster 'default' not found. Creating..."
              aws ecs create-cluster --cluster default
+            # クラスターが完全に作成されるまで10秒待機
+             echo "Waiting for cluster to be active..."
+             sleep 10
             fi            
             
             # サービスが存在するか確認。なければ作成するコマンドを実行
@@ -153,6 +156,9 @@
             if ! aws ecs describe-clusters --clusters default | grep -q "ACTIVE"; then
              echo "Cluster 'default' not found. Creating..."
              aws ecs create-cluster --cluster default
+            # クラスターが完全に作成されるまで10秒待機
+             echo "Waiting for cluster to be active..."
+             sleep 10
             fi               
             
             # サービスがなければ作成（クラスター確認はbackend側でもやるので念のため）
