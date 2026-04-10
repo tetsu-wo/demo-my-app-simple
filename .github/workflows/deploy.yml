@@ -64,6 +64,22 @@
             container-name: backend-container
             image: ${{ steps.build-backend.outputs.image }}
 
+        - name: Ensure ECS Service exists
+          run: |
+            # サービスが存在するか確認。なければ作成するコマンドを実行
+            if ! aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} | grep -q "ACTIVE"; then
+              echo "Service does not exist. Creating..."
+              aws ecs create-service \
+                --cluster ${{ env.ECS_CLUSTER }} \
+                --service-name ${{ env.ECS_SERVICE }} \
+                --task-definition ${{ steps.task-def.outputs.task-definition }} \
+                --desired-count 1 \
+                --launch-type FARGATE \
+                --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
+            else
+              echo "Service already exists."
+            fi
+
         # 5. ECS サービスを更新してデプロイ
         - name: Deploy Amazon ECS task definition
           uses: aws-actions/amazon-ecs-deploy-task-definition@v2
@@ -124,6 +140,19 @@
             task-definition: frontend/.aws/task-definition.json
             container-name: frontend-container
             image: ${{ steps.build-frontend.outputs.image }}
+
+        - name: Ensure Frontend ECS Service exists
+          run: |
+            # サービスがなければ作成（クラスター確認はbackend側でもやるので念のため）
+            if ! aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services frontend-service | grep -q "ACTIVE"; then
+              aws ecs create-service \
+                --cluster ${{ env.ECS_CLUSTER }} \
+                --service-name frontend-service \
+                --task-definition ${{ steps.task-def.outputs.task-definition }} \
+                --desired-count 1 \
+                --launch-type FARGATE \
+                --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNETS }}],securityGroups=[${{ secrets.SG_FRONTEND }}],assignPublicIp=ENABLED}"
+            fi
 
         # 5. ECS サービスを更新してデプロイ
         - name: Deploy Amazon ECS task definition
