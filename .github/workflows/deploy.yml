@@ -12,7 +12,7 @@
     SERVICE_NAME_FRONTEND: frontend-service   # AWS上のサービス名
 
   jobs:
-    deploy:
+    deploy-backend:
       runs-on: ubuntu-latest
       permissions:
         contents: read
@@ -54,46 +54,6 @@
             docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG ./backend
             docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG
             echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
-            
-        # --- フロントエンドのビルドとプッシュ ---
-        - name: Build and Push Frontend Image
-          id: build-frontend
-          env:
-            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-            IMAGE_TAG: ${{ github.sha }}
-          run: |
-            # フロントエンドのディレクトリに移動してビルドする場合
-            docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG ./frontend
-            docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG
-            echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-
-#        - name: Network Configuration Check
-#          run: |
-#            echo "Checking VPC and Subnets..."
-#            # 指定したVPCが存在するか確認
-#            aws ec2 describe-vpcs --vpc-ids vpc-0bb82bc8eb168969f --region ap-northeast-1
-#
-#            # 指定したサブネットが正しいか確認（一つでも間違っていればエラーになります）
-#            aws ec2 describe-subnets --subnet-ids "subnet-06b7f26151f215ccc" "subnet-0ce940b40a21078d0" "subnet-0e79077ff070e3a79" --region ap-northeast-1
-#
-#            # セキュリティグループがそのVPC内に存在するか確認
-#            aws ec2 describe-security-groups --group-ids sg-07248ad9614a9fbc0 --region ap-northeast-1
-#
-#        - name: Express Mode Network Check
-#          run: |
-#            echo "### Checking AWS Resources for Express Mode ###"
-#            # 1. 指定したサブネットが今のリージョンで見えるか
-#            aws ec2 describe-subnets --subnet-ids subnet-06b7f26151f215ccc subnet-0ce940b40a21078d0 subnet-0e79077ff070e3a79 --query "Subnets[*].{ID:SubnetId,VPC:VpcId,AZ:AvailabilityZone}"
-#
-#            # 2. セキュリティグループが見えるか
-#            aws ec2 describe-security-groups --group-ids sg-07248ad9614a9fbc0 --query "SecurityGroups[*].{ID:GroupId,VPC:VpcId}"
-#
-#            # 3. ECSクラスター側の準備（FARGATEが有効か）を確認
-#            aws ecs describe-clusters --clusters default --query "clusters[0].capacityProviders"
-          
-          
-          # --- ここから「バックエンド」のデプロイ ---
 
         # 4. タスク定義ファイルのイメージタグを更新
         - name: Fill in the new image ID in the Amazon ECS task definition
@@ -113,55 +73,64 @@
             cluster: ${{ env.ECS_CLUSTER }}
             wait-for-service-stability: true # デプロイ完了まで待機
 
+    deploy-frontend:
+      runs-on: ubuntu-latest
+      permissions:
+        contents: read
+        id-token: write # OIDC認証を使用する場合に必要
 
-#
-#        - name: Deploy Backend (Create or Update)
-#          uses: aws-actions/amazon-ecs-deploy-express-service@v1
-#          with:
-#            cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-#            service-name: "backend-service" # サービス名
-#            image: ${{ steps.build-backend.outputs.image }} # ビルドしたイメージ
-#            container-port: 8080
-#            min-task-count: 1  # 起動するタスクの数を指定
-#            max-task-count: 1
-#            wait-for-minutes: 5
-#            launch-type: FARGATE # もしWarningが出ても、強制的にFargateを認識させるために有効な場合があります
-            # ★これを追加（ECSがECRからイメージを引くための権限ロール）
-#            execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
-            # ★これを追加
-#            infrastructure-role-arn: ${{ secrets.ECS_INFRASTRUCTURE_ROLE_ARN }}
-#            health-check-path: /health
-            # --- ↓ 新規作成時に必須となる可能性が高い項目 ---
-#            cpu: 1024
-#            memory: 2048
-#            subnets: "subnet-0527eb43c92632b21,subnet-074f4a7179f8c3dc4"  # "subnet-xxxx,subnet-yyyy" の形式
-#            security-groups: "sg-0a5aa02c2a3bf4988"  # "sg-xxxx" の形式
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
 
-
-        # --- ここから「フロントエンド」のデプロイ ---
-#        - name: Deploy Frontend to ECS Express Mode (Create or Update)
-#          run: |
-#            # サービスが存在するかチェック
-#            STATUS=$(aws ecs describe-services --services frontend-service --query "services[0].status" --output text 2>/dev/null || echo "MISSING")
-#
-#            if [ "$STATUS" = "ACTIVE" ]; then
-#              echo "Updating existing Frontend service..."
-#              aws ecs update-express-service --name frontend-service --image-uri ${{ steps.build-frontend.outputs.image }}
-#            else
-#              echo "Creating new Frontend service..."
-#              aws ecs create-express-service --name frontend-service --image-uri ${{ steps.build-frontend.outputs.image }}
-#            fi
-        - name: Deploy Frontend (Create or Update)
-          uses: aws-actions/amazon-ecs-deploy-express-service@v1
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
           with:
-            cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-            service-name: "frontend-service"
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ env.AWS_REGION }}
+
+        - name: Debug ECS Info
+          run: |
+            echo "Target Cluster: ${{ secrets.ECS_CLUSTER_NAME }}"
+            echo "Target Service: backend-service"
+            aws ecs list-clusters
+            aws sts get-caller-identity
+
+        - name: Login to Amazon ECR
+          id: login-ecr
+          uses: aws-actions/amazon-ecr-login@v2
+
+        - name: Grant execute permission for gradlew
+          run: chmod +x ./backend/gradlew
+
+        # --- フロントエンドのビルドとプッシュ ---
+        - name: Build and Push Frontend Image
+          id: build-frontend
+          env:
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+            IMAGE_TAG: ${{ github.sha }}
+          run: |
+            # フロントエンドのディレクトリに移動してビルドする場合
+            docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG ./frontend
+            docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG
+            echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_FRONTEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+        # 4. タスク定義ファイルのイメージタグを更新
+        - name: Fill in the new image ID in the Amazon ECS task definition
+          id: task-def
+          uses: aws-actions/amazon-ecs-render-task-definition@v1
+          with:
+            task-definition: frontend/.aws/task-definition.json
+            container-name: frontend-container
             image: ${{ steps.build-frontend.outputs.image }}
-            # ★これを追加（ECSがECRからイメージを引くための権限ロール）
-            execution-role-arn: ${{ secrets.ECS_EXECUTION_ROLE_ARN }}
-            # ★これを追加
-            infrastructure-role-arn: ${{ secrets.ECS_INFRASTRUCTURE_ROLE_ARN }}
-            # --- ↓ 新規作成時に必須となる可能性が高い項目 ---
-            cpu: 256
-            memory: 512
-            vpc-id: ${{ secrets.VPC_ID }} # vpc-xxxxxx 形式
+
+        # 5. ECS サービスを更新してデプロイ
+        - name: Deploy Amazon ECS task definition
+          uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+          with:
+            task-definition: ${{ steps.task-def.outputs.task-definition }}
+            service: ${{ env.ECS_SERVICE }}
+            cluster: ${{ env.ECS_CLUSTER }}
+            wait-for-service-stability: true # デプロイ完了まで待機
+
