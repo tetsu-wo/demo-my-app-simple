@@ -102,7 +102,7 @@
           with:
             task-definition: .aws/task-definition.json
             container-name: backend-container
-            image: ${{ steps.build-image.outputs.image }}
+            image: ${{ steps.build-backend.outputs.image }}
 
         # 5. ECS サービスを更新してデプロイ
         - name: Deploy Amazon ECS task definition
