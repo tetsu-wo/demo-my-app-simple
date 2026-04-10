@@ -51,8 +51,8 @@
             IMAGE_TAG: ${{ github.sha }}
           run: |        
           # ★ここに追加！最新のプログラムをコンパイルしてjarを作る
-            chmod +x gradlew
-            ./gradlew clean build -x test 
+#            chmod +x gradlew
+#            ./gradlew clean build -x test
           
           # バックエンドのディレクトリに移動してビルドする場合
             docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG ./backend
