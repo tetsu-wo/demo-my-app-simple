@@ -66,6 +66,12 @@
 
         - name: Ensure ECS Service exists
           run: |
+            # 1. クラスターが存在するか確認。なければ作成
+            if ! aws ecs describe-clusters --clusters default | grep -q "ACTIVE"; then
+             echo "Cluster 'default' not found. Creating..."
+             aws ecs create-cluster --cluster default
+            fi            
+            
             # サービスが存在するか確認。なければ作成するコマンドを実行
             if ! aws ecs describe-services --cluster default --services service-backend | grep -q "ACTIVE"; then
               echo "Service does not exist. Creating..."
@@ -143,6 +149,12 @@
 
         - name: Ensure Frontend ECS Service exists
           run: |
+            # 1. クラスターが存在するか確認。なければ作成
+            if ! aws ecs describe-clusters --clusters default | grep -q "ACTIVE"; then
+             echo "Cluster 'default' not found. Creating..."
+             aws ecs create-cluster --cluster default
+            fi               
+            
             # サービスがなければ作成（クラスター確認はbackend側でもやるので念のため）
             if ! aws ecs describe-services --cluster default --services frontend-service | grep -q "ACTIVE"; then
               aws ecs create-service \
