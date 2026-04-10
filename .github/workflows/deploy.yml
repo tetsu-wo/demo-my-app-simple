@@ -49,8 +49,7 @@
           env:
             ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
             IMAGE_TAG: ${{ github.sha }}
-          run: |
-            
+          run: |        
           # ★ここに追加！最新のプログラムをコンパイルしてjarを作る
             chmod +x gradlew
             ./gradlew clean build -x test 
