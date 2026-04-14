@@ -1,10 +1,12 @@
 name: Fullstack CI
 
 on:
-  push:
-    branches: [ "main" ] # mainブランチにプッシュされたら実行
   pull_request:
-    branches: [ "main" ] # PRが作成・更新されたら実行
+    branches: [ main ]   # PRが作成・更新されたら実行
+    paths:
+      - 'src/**'         # ソースコード変更時
+      - 'build.gradle'   # ライブラリの追加でテストが壊れないか確認
+  workflow_dispatch:     # 手動トリガーも可能にする
 
 jobs:
   # --- バックエンドのビルドとテスト ---

@@ -2,7 +2,18 @@
 
   on:
     push:
-      branches: [ "main" ]
+      branches: [ main ]          # mainブランチへのプッシュ時に実行
+      paths:
+        - 'backend/src/**'        # アプリのコードが変わった時
+        - 'frontend/src/**'       # アプリのコードが変わった時
+        - 'backend/build.gradle'  # 設定変更を反映した最新版をデプロイ
+        - 'backend/Dockerfile'    # バックエンドのDockerfileが変わった時
+        - 'frontend/Dockerfile'   # フロントエンドのDockerfileが変わった時
+    workflow_run:
+      workflows: ["Infrastructure CI/CD"]  # 【重要】インフラ更新が終わった後に自動連鎖
+      types:
+        - completed
+    workflow_dispatch:            # 手動トリガーも可能にする
 
   env:
     AWS_REGION: ap-northeast-1
@@ -30,12 +41,12 @@
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ env.AWS_REGION }}
 
-        - name: Debug ECS Info
-          run: |
-            echo "Target Cluster: ${{ secrets.ECS_CLUSTER_NAME }}"
-            echo "Target Service: backend-service"
-            aws ecs list-clusters
-            aws sts get-caller-identity
+        # - name: Debug ECS Info
+        #   run: |
+        #     echo "Target Cluster: ${{ secrets.ECS_CLUSTER_NAME }}"
+        #     echo "Target Service: backend-service"
+        #     aws ecs list-clusters
+        #     aws sts get-caller-identity
 
         - name: Login to Amazon ECR
           id: login-ecr
@@ -49,12 +60,9 @@
           env:
             ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
             IMAGE_TAG: ${{ github.sha }}
-          run: |        
-          # ★ここに追加！最新のプログラムをコンパイルしてjarを作る
-            chmod +x gradlew
-            ./gradlew clean build -x test
-          
-          # バックエンドのディレクトリに移動してビルドする場合
+          run: |
+           
+            # バックエンドのディレクトリに移動してビルドする場合
             docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG ./backend
             docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG
             echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_BACKEND }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
@@ -68,30 +76,30 @@
             container-name: backend-container
             image: ${{ steps.build-backend.outputs.image }}
 
-        - name: Ensure ECS Service exists
-          run: |
-            # 1. クラスターが存在するか確認。なければ作成
-            if ! aws ecs describe-clusters --clusters my-app-default3 | grep -q "ACTIVE"; then
-             echo "Cluster 'default' not found. Creating..."
-             aws ecs create-cluster --cluster my-app-default3
-            # クラスターが完全に作成されるまで10秒待機
-             echo "Waiting for cluster to be active..."
-             sleep 10
-            fi            
+        # - name: Ensure ECS Service exists
+        #   run: |
+        #     # 1. クラスターが存在するか確認。なければ作成
+        #     if ! aws ecs describe-clusters --clusters my-app-default3 | grep -q "ACTIVE"; then
+        #      echo "Cluster 'default' not found. Creating..."
+        #      aws ecs create-cluster --cluster my-app-default3
+        #     # クラスターが完全に作成されるまで10秒待機
+        #      echo "Waiting for cluster to be active..."
+        #      sleep 10
+        #     fi            
             
-            # サービスが存在するか確認。なければ作成するコマンドを実行
-            if ! aws ecs describe-services --cluster my-app-default3 --services service-backend | grep -q "ACTIVE"; then
-              echo "Service does not exist. Creating..."
-              aws ecs create-service \
-                --cluster my-app-default3 \
-                --service-name service-backend \
-                --task-definition backend-task \
-                --desired-count 1 \
-                --launch-type FARGATE \
-                --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}"
-            else
-              echo "Service already exists."
-            fi
+        #     # サービスが存在するか確認。なければ作成するコマンドを実行
+        #     if ! aws ecs describe-services --cluster my-app-default3 --services service-backend | grep -q "ACTIVE"; then
+        #       echo "Service does not exist. Creating..."
+        #       aws ecs create-service \
+        #         --cluster my-app-default3 \
+        #         --service-name service-backend \
+        #         --task-definition backend-task \
+        #         --desired-count 1 \
+        #         --launch-type FARGATE \
+        #         --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}"
+        #     else
+        #       echo "Service already exists."
+        #     fi
 
         # 5. ECS サービスを更新してデプロイ
         - name: Deploy Amazon ECS task definition
@@ -119,12 +127,12 @@
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ${{ env.AWS_REGION }}
 
-        - name: Debug ECS Info
-          run: |
-            echo "Target Cluster: ${{ secrets.ECS_CLUSTER_NAME }}"
-            echo "Target Service: backend-service"
-            aws ecs list-clusters
-            aws sts get-caller-identity
+        # - name: Debug ECS Info
+        #   run: |
+        #     echo "Target Cluster: ${{ secrets.ECS_CLUSTER_NAME }}"
+        #     echo "Target Service: backend-service"
+        #     aws ecs list-clusters
+        #     aws sts get-caller-identity
 
         - name: Login to Amazon ECR
           id: login-ecr
@@ -154,27 +162,27 @@
             container-name: frontend-container
             image: ${{ steps.build-frontend.outputs.image }}
 
-        - name: Ensure Frontend ECS Service exists
-          run: |
-            # 1. クラスターが存在するか確認。なければ作成
-            if ! aws ecs describe-clusters --clusters my-app-default3 | grep -q "ACTIVE"; then
-             echo "Cluster 'default' not found. Creating..."
-             aws ecs create-cluster --cluster my-app-default3
-            # クラスターが完全に作成されるまで10秒待機
-             echo "Waiting for cluster to be active..."
-             sleep 10
-            fi               
+        # - name: Ensure Frontend ECS Service exists
+        #   run: |
+        #     # 1. クラスターが存在するか確認。なければ作成
+        #     if ! aws ecs describe-clusters --clusters my-app-default3 | grep -q "ACTIVE"; then
+        #      echo "Cluster 'default' not found. Creating..."
+        #      aws ecs create-cluster --cluster my-app-default3
+        #     # クラスターが完全に作成されるまで10秒待機
+        #      echo "Waiting for cluster to be active..."
+        #      sleep 10
+        #     fi               
             
-            # サービスがなければ作成（クラスター確認はbackend側でもやるので念のため）
-            if ! aws ecs describe-services --cluster my-app-default3 --services frontend-service | grep -q "ACTIVE"; then
-              aws ecs create-service \
-                --cluster my-app-default3 \
-                --service-name frontend-service \
-                --task-definition frontend-task \
-                --desired-count 1 \
-                --launch-type FARGATE \
-                --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}"
-            fi
+        #     # サービスがなければ作成（クラスター確認はbackend側でもやるので念のため）
+        #     if ! aws ecs describe-services --cluster my-app-default3 --services frontend-service | grep -q "ACTIVE"; then
+        #       aws ecs create-service \
+        #         --cluster my-app-default3 \
+        #         --service-name frontend-service \
+        #         --task-definition frontend-task \
+        #         --desired-count 1 \
+        #         --launch-type FARGATE \
+        #         --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}"
+        #     fi
 
         # 5. ECS サービスを更新してデプロイ
         - name: Deploy Amazon ECS task definition

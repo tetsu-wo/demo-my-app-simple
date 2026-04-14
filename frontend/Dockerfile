@@ -10,6 +10,10 @@ RUN npm ci && npm run build
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV production
+# ★ここを追加（自動化のポイント）
+ENV HOSTNAME "0.0.0.0"
+ENV PORT 3000
+
 #Next.js standalone出力を利用（軽量化のコツ）
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static

@@ -1,0 +1,5 @@
+# Terraformの実行ファイルやプラグインを除外
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
