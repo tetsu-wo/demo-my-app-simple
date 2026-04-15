@@ -4,6 +4,17 @@ resource "aws_service_discovery_http_namespace" "this" {
   description = "Cloud Map namespace for ECS Service Connect"
 }
 
+# main.tf のどこでも良いので追記
+import {
+  to = aws_service_discovery_http_namespace.this
+  id = "ns-rbxcs4unbxj2abqi" # AWSコンソールで確認したNamespace ID
+}
+
+import {
+  to = module.alb.aws_lb.this[0]
+  id = "arn:aws:elasticloadbalancing:ap-northeast-1:938868825847:loadbalancer/app/my-alb/cd128da70e60d802"
+}
+
 # 1. VPCモジュール：ネットワークを作る
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
@@ -182,6 +193,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
