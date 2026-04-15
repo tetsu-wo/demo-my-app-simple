@@ -174,7 +174,7 @@ module "ecs" {
           description                  = "Service port"
           from_port                    = local.container_port
           ip_protocol                  = "tcp"
-          referenced_security_group_id = module.ecs.module.service["ecsdemo-frontend"].security_group_id
+          referenced_security_group_id =  module.alb.security_group_id
         }
       }
       security_group_egress_rules = {
