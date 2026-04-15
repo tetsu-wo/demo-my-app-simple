@@ -137,7 +137,7 @@ module "ecs" {
           portMappings = [
             {
               name          = "ecs-sample"
-              containerPort = 8080
+              containerPort = 80
               protocol      = "tcp"
             }
           ]
@@ -209,6 +209,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
