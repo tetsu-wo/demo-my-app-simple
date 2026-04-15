@@ -47,9 +47,7 @@ module "alb" {
     description = "HTTP web traffic"
     cidr_ipv4   = "0.0.0.0/0"
   }  
-}
-
-  security_group_ingress_rules = {
+ 
   alb_ingress = { # ここを all_http と並行、もしくはこれに差し替え
     from_port                    = 8080
     to_port                      = 8080
@@ -211,6 +209,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
