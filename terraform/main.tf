@@ -39,6 +39,16 @@ module "alb" {
   vpc_id  = module.vpc.vpc_id
   subnets = module.vpc.public_subnets
 
+  security_group_ingress_rules = {
+  all_http = {
+    from_port   = 80
+    to_port     = 80
+    ip_protocol = "tcp"
+    description = "HTTP web traffic"
+    cidr_ipv4   = "0.0.0.0/0"
+  }
+}
+
   # 外部からポート80でアクセス
   listeners = {
     http = {
@@ -191,6 +201,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
