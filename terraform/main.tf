@@ -6,20 +6,6 @@ terraform {
   }
 }
 
-# これが「電話帳」本体の定義
-/*
-resource "aws_service_discovery_http_namespace" "this" {
-  name        = "example" # ここを "example" にすれば今のエラーは消えます
-  description = "Cloud Map namespace for ECS Service Connect"
-}
-*/
-
-# main.tf のどこでも良いので追記
-import {
-  to = aws_service_discovery_http_namespace.this
-  id = "ns-rbxcs4unbxj2abqi" # AWSコンソールで確認したNamespace ID
-}
-
 
 # 1. VPCモジュール：ネットワークを作る
 module "vpc" {
@@ -199,6 +185,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
