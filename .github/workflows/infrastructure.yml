@@ -38,6 +38,6 @@ jobs:
       - name: Terraform Init & Apply
         working-directory: terraform # 実行ディレクトリを指定
         run: |
-          terraform init
+          terraform init -reconfigure
           terraform refresh
           terraform apply -auto-approve
