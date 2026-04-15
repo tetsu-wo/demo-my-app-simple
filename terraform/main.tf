@@ -41,11 +41,14 @@ module "alb" {
 
   security_group_ingress_rules = {
   all_http = {
-    from_port   = 80
+    from_port   = 8080
     to_port     = 80
     ip_protocol = "tcp"
     description = "HTTP web traffic"
     cidr_ipv4   = "0.0.0.0/0"
+    # 重要：ALBのセキュリティグループからのアクセスを許可
+    referenced_security_group_id = module.alb.security_group_id
+
   }
 }
 
@@ -201,6 +204,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
