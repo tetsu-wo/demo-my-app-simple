@@ -41,15 +41,21 @@ module "alb" {
 
   security_group_ingress_rules = {
   all_http = {
-    from_port   = 8080
+    from_port   = 80
     to_port     = 80
     ip_protocol = "tcp"
     description = "HTTP web traffic"
     cidr_ipv4   = "0.0.0.0/0"
-    # 重要：ALBのセキュリティグループからのアクセスを許可
-    referenced_security_group_id = module.alb.security_group_id
-
   }
+
+  alb_ingress = {
+    from_port   = 8080 
+    to_port     = 8080
+    ip_protocol = "tcp"
+    description = "Allow traffic from ALB"
+    # こちらは「ALBのSGから」なのでこれだけを指定
+    referenced_security_group_id = module.alb.security_group_id
+    # cidr_ipv4 = "0.0.0.0/0" などは書かない
 }
 
   # 外部からポート80でアクセス
@@ -204,6 +210,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
