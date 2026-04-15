@@ -1,3 +1,11 @@
+terraform {
+  backend "s3" {
+    bucket = "demo-myapp-simple-938868825847-ap-northeast-1-an"
+    key    = "ecs-demo/terraform.tfstate" # 保存されるファイル名（任意）
+    region = "ap-northeast-1"
+  }
+}
+
 # これが「電話帳」本体の定義
 resource "aws_service_discovery_http_namespace" "this" {
   name        = "example" # ここを "example" にすれば今のエラーは消えます
@@ -193,6 +201,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
