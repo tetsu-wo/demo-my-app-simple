@@ -18,10 +18,6 @@ import {
   id = "ns-rbxcs4unbxj2abqi" # AWSコンソールで確認したNamespace ID
 }
 
-import {
-  to = module.alb.aws_lb.this[0]
-  id = "arn:aws:elasticloadbalancing:ap-northeast-1:938868825847:loadbalancer/app/my-alb/cd128da70e60d802"
-}
 
 # 1. VPCモジュール：ネットワークを作る
 module "vpc" {
@@ -201,6 +197,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
