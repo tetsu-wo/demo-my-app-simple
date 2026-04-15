@@ -6,6 +6,12 @@ terraform {
   }
 }
 
+# これが「名前空間」を作る本体です
+resource "aws_service_discovery_http_namespace" "this" {
+  name        = "example"
+  description = "Cloud Map namespace for ECS Service Connect"
+}
+
 
 # 1. VPCモジュール：ネットワークを作る
 module "vpc" {
@@ -168,7 +174,7 @@ module "ecs" {
           description                  = "Service port"
           from_port                    = local.container_port
           ip_protocol                  = "tcp"
-          referenced_security_group_id = "sg-12345678"
+          referenced_security_group_id = module.ecs.module.service["ecsdemo-frontend"].security_group_id
         }
       }
       security_group_egress_rules = {
@@ -185,6 +191,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
