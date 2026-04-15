@@ -39,4 +39,5 @@ jobs:
         working-directory: terraform # 実行ディレクトリを指定
         run: |
           terraform init
+          terraform refresh      
           terraform apply -auto-approve

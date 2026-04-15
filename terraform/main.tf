@@ -1,3 +1,9 @@
+# これが「電話帳」本体の定義
+resource "aws_service_discovery_http_namespace" "this" {
+  name        = "example" # ここを "example" にすれば今のエラーは消えます
+  description = "Cloud Map namespace for ECS Service Connect"
+}
+
 # 1. VPCモジュール：ネットワークを作る
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
@@ -131,6 +137,8 @@ module "ecs" {
         }
       }
 
+      # 外部（インターネット）からのリクエストを受けるなら基本はALB
+      # システム内部のコンテナ同士の通信を効率化したいならServiceConnect
       service_connect_configuration = {
         namespace = "example"
         service = [{
