@@ -149,7 +149,7 @@ module "ecs" {
       # 外部（インターネット）からのリクエストを受けるなら基本はALB
       # システム内部のコンテナ同士の通信を効率化したいならServiceConnect
       service_connect_configuration = {
-        namespace = "example"
+        namespace = aws_service_discovery_http_namespace.this.name
         service = [{
           client_alias = {
             port     = 80
@@ -191,6 +191,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
