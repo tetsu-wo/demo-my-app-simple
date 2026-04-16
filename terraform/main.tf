@@ -129,10 +129,9 @@ module "ecs" {
     frontend = {
       cpu    = 1024
       memory = 4096
-      container_definitions = {
-        frontend = {
-      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
       container_name = "frontend"
+      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
+      
       
 
     # ログ設定をコンテナ定義の中に移動（正しい階層）
@@ -145,14 +144,14 @@ module "ecs" {
         "awslogs-stream-prefix" = "ecs"
       }
     }
-        }}
-        port_mappings = [
-        {
-          name          = "frontend"
-          container_port = 3000
-          protocol      = "tcp"
-        }
-      ]
+        
+    port_mappings = [
+    {
+      name          = "frontend"
+      container_port = 3000
+      protocol      = "tcp"
+    }
+  ]
         
       
 
@@ -191,11 +190,9 @@ module "ecs" {
     backend = {
       cpu    = 1024
       memory = 4096
-      container_definitions = {
-        backend = {
-      
+      container_name = "backend"      
       image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
-      container_name = "backend"
+      
       
       # ログ設定をコンテナ定義の中に移動（正しい階層）
       enable_cloudwatch_logging = true
@@ -207,14 +204,14 @@ module "ecs" {
           "awslogs-stream-prefix" = "ecs"
         }
       }
-        }}
+        
 
-        port_mappings = [
-        {
-          name          = "backend"
-          container_port = 8080
-          protocol      = "tcp"
-        }
+      port_mappings = [
+      {
+        name          = "backend"
+        container_port = 8080
+        protocol      = "tcp"
+      }
       ]
         
       
