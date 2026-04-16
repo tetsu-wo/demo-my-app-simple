@@ -165,8 +165,8 @@ module "ecs" {
           # Example image used requires access to write to root filesystem
           readonlyRootFilesystem = false
 
-          dependsOn = [{
-            containerName = "fluent-bit"
+          dependencies = [{
+            container_name = "fluent-bit"
             condition     = "START"
           }]
 
@@ -257,8 +257,8 @@ module "ecs" {
           # Example image used requires access to write to root filesystem
           readonlyRootFilesystem = false
 
-          dependsOn = [{
-            containerName = "fluent-bit"
+          dependencies = [{
+            container_name = "fluent-bit"
             condition     = "START"
           }]
 
