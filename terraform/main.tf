@@ -143,7 +143,7 @@ module "ecs" {
           memory    = 1024
           essential = true
           image     = "906394416424.dkr.ecr.us-west-2.amazonaws.com/aws-for-fluent-bit:stable"
-          firelensConfiguration = {
+          firelens_configuration = {
             type = "fluentbit"
           }
           memoryReservation = 50
@@ -163,7 +163,7 @@ module "ecs" {
           ]
 
           # Example image used requires access to write to root filesystem
-          readonlyRootFilesystem = false
+          readonly_root_filesystem = false
 
           dependencies = [{
             container_name = "fluent-bit"
@@ -171,7 +171,7 @@ module "ecs" {
           }]
 
           enable_cloudwatch_logging = false
-          logConfiguration = {
+          log_configuration = {
             logDriver = "awsfirelens"
             options = {
               Name                    = "firehose"
@@ -180,7 +180,7 @@ module "ecs" {
               log-driver-buffer-limit = "2097152"
             }
           }
-          memoryReservation = 100
+          memory_reservation = 100
         }
       }
 
@@ -235,7 +235,7 @@ module "ecs" {
           memory    = 1024
           essential = true
           image     = "906394416424.dkr.ecr.us-west-2.amazonaws.com/aws-for-fluent-bit:stable"
-          firelensConfiguration = {
+          firelens_configuration = {
             type = "fluentbit"
           }
           memoryReservation = 50
@@ -255,7 +255,7 @@ module "ecs" {
           ]
 
           # Example image used requires access to write to root filesystem
-          readonlyRootFilesystem = false
+          readonly_root_filesystem = false
 
           dependencies = [{
             container_name = "fluent-bit"
@@ -263,7 +263,7 @@ module "ecs" {
           }]
 
           enable_cloudwatch_logging = false
-          logConfiguration = {
+          log_configuration = {
             logDriver = "awsfirelens"
             options = {
               Name                    = "firehose"
@@ -272,7 +272,7 @@ module "ecs" {
               log-driver-buffer-limit = "2097152"
             }
           }
-          memoryReservation = 100
+          memory_reservation = 100
         }
       }
 
