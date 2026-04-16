@@ -128,6 +128,8 @@ module "ecs" {
     }
   }
 
+  depends_on = [module.alb]
+
   services = {
     frontend = {
       cpu    = 1024
@@ -319,6 +321,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
