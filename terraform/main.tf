@@ -129,7 +129,8 @@ module "ecs" {
     frontend = {
       cpu    = 1024
       memory = 4096
-
+      container_definitions = {
+        frontend-app = {
       image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
       container_name = "frontend-app"
       port_mappings = [
@@ -150,6 +151,7 @@ module "ecs" {
         "awslogs-stream-prefix" = "ecs"
       }
     }
+        }}
         
       
 
@@ -188,6 +190,8 @@ module "ecs" {
     backend = {
       cpu    = 1024
       memory = 4096
+      container_definitions = {
+        backend-app = {
       
       image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
       container_name = "backend-app"
@@ -208,6 +212,7 @@ module "ecs" {
           "awslogs-stream-prefix" = "ecs"
         }
       }
+        }}
         
       
 
