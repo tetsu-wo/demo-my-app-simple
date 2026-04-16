@@ -134,6 +134,7 @@ module "ecs" {
     frontend = {
       cpu    = 1024
       memory = 4096
+      main_container_name = "frontend-app"
 
       # Container definition(s)
       container_definitions = {
@@ -211,6 +212,7 @@ module "ecs" {
     backend = {
       cpu    = 1024
       memory = 4096
+      main_container_name = "backend-app"
 
       # Container definition(s)
       container_definitions = {
