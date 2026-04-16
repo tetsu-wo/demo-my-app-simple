@@ -65,7 +65,7 @@ module "alb" {
               target_group_key = "backend"
             }]
             conditions = [{
-              path.pattern = {values = ["/api/*"]}
+              path_pattern = {values = ["/api/*"]}
             }]
           }
         }  
@@ -313,6 +313,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
