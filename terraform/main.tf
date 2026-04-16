@@ -149,7 +149,7 @@ module "ecs" {
           memoryReservation = 50
         }
 
-        ecs-sample = {
+        frontend-app = {
           cpu       = 512
           memory    = 1024
           essential = true
@@ -241,7 +241,7 @@ module "ecs" {
           memoryReservation = 50
         }
 
-        ecs-sample = {
+        backend-app = {
           cpu       = 512
           memory    = 1024
           essential = true
@@ -321,6 +321,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
