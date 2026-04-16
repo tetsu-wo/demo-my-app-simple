@@ -103,7 +103,7 @@ module "alb" {
 
 # 3. ECSモジュール：アプリの器を作る
 module "ecs" {
-  source = "terraform-aws-modules/ecs/aws"
+  source  = "terraform-aws-modules/ecs/aws"
   version = "6.0.0"
 
   cluster_name = "ecs-integrated"
@@ -117,62 +117,49 @@ module "ecs" {
     }
   }
 
-  # Cluster capacity providers
   default_capacity_provider_strategy = {
-    FARGATE = {
-      weight = 50
-      base   = 20
-    }
-    FARGATE_SPOT = {
-      weight = 50
-    }
+    FARGATE      = { weight = 50, base = 20 }
+    FARGATE_SPOT = { weight = 50 }
   }
 
   depends_on = [module.alb]
 
   services = {
+    # --- フロントエンド ---
     frontend = {
       cpu    = 1024
       memory = 4096
-     
-      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
-      container_name = "frontend-app"
-       
-      port_mappings = [
-        {
-          name          = "frontend-app"
-          container_port = 3000
-          protocol      = "tcp"
-        }
-      ]
 
-    # 1. FireLensではなく、標準のCloudWatchログを使う設定にする
-      enable_cloudwatch_logging = true
-    
-    # 2. log_configuration をシンプルに書き換える
-      log_configuration = {
-        log_driver = "awslogs"
-        options = {
-            "awslogs-group"         = "/aws/ecs/ecs-integrated/frontend" # 好きな名前でOK
-          "awslogs-region"        = "ap-northeast-1"                   # あなたのリージョン
-          "awslogs-stream-prefix" = "ecs"
+      container_definitions = {
+        frontend-app = {
+          cpu       = 512
+          memory    = 1024
+          essential = true
+          image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
+          port_mappings = [
+            {
+              name          = "frontend-app"
+              container_port = 3000
+              protocol      = "tcp"
+            }
+          ]
+          # ログ設定をコンテナ定義の中に移動（正しい階層）
+          enable_cloudwatch_logging = true
+          log_configuration = {
+            log_driver = "awslogs"
+            options = {
+              "awslogs-group"         = "/aws/ecs/ecs-integrated/frontend"
+              "awslogs-region"        = "ap-northeast-1"
+              "awslogs-stream-prefix" = "ecs"
+            }
+          }
         }
       }
-        }
-  }
-        
-        
-      
 
-      # 外部（インターネット）からのリクエストを受けるなら基本はALB
-      # システム内部のコンテナ同士の通信を効率化したいならServiceConnect
       service_connect_configuration = {
         namespace = aws_service_discovery_http_namespace.this.name
         service = [{
-          client_alias = {
-            port     = 80
-            dns_name = "frontend-api"
-          }
+          client_alias   = { port = 80, dns_name = "frontend-api" }
           port_name      = "frontend-app"
           discovery_name = "frontend"
         }]
@@ -189,61 +176,52 @@ module "ecs" {
       subnet_ids = module.vpc.private_subnets
       security_group_ingress_rules = {
         alb_3000 = {
-          description                  = "Service port"
-          from_port                    = 3000
-          ip_protocol                  = "tcp"
-          referenced_security_group_id =  module.alb.security_group_id
+          from_port   = 3000
+          to_port     = 3000
+          ip_protocol = "tcp"
+          referenced_security_group_id = module.alb.security_group_id
         }
       }
       security_group_egress_rules = {
-        all = {
-          ip_protocol = "-1"
-          cidr_ipv4   = "0.0.0.0/0"
-        }
+        all = { ip_protocol = "-1", cidr_ipv4 = "0.0.0.0/0" }
       }
     }
 
+    # --- バックエンド ---
     backend = {
       cpu    = 1024
       memory = 4096
-    
-      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
-      container_name = "backend-app"
 
-      port_mappings = [
-        {
-          name          = "backend-app"
-          container_port = 8080
-          protocol      = "tcp"
-        }
-      ]
-
-    # 1. FireLensではなく、標準のCloudWatchログを使う設定にする
-      enable_cloudwatch_logging = true
-    
-    # 2. log_configuration をシンプルに書き換える
-      log_configuration = {
-        log_driver = "awslogs"
-        options = {
-          "awslogs-group"         = "/aws/ecs/ecs-integrated/backend" # 好きな名前でOK
-          "awslogs-region"        = "ap-northeast-1"                   # あなたのリージョン
-          "awslogs-stream-prefix" = "ecs"
+      container_definitions = {
+        backend-app = {
+          cpu       = 512
+          memory    = 1024
+          essential = true
+          image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
+          port_mappings = [
+            {
+              name          = "backend-app"
+              container_port = 8080
+              protocol      = "tcp"
+            }
+          ]
+          # ログ設定をコンテナ定義の中に移動（正しい階層）
+          enable_cloudwatch_logging = true
+          log_configuration = {
+            log_driver = "awslogs"
+            options = {
+              "awslogs-group"         = "/aws/ecs/ecs-integrated/backend"
+              "awslogs-region"        = "ap-northeast-1"
+              "awslogs-stream-prefix" = "ecs"
+            }
+          }
         }
       }
-    }
-        
-        
-      
 
-      # 外部（インターネット）からのリクエストを受けるなら基本はALB
-      # システム内部のコンテナ同士の通信を効率化したいならServiceConnect
       service_connect_configuration = {
         namespace = aws_service_discovery_http_namespace.this.name
         service = [{
-          client_alias = {
-            port     = 80
-            dns_name = "backend-api"
-          }
+          client_alias   = { port = 80, dns_name = "backend-api" }
           port_name      = "backend-app"
           discovery_name = "backend"
         }]
@@ -259,18 +237,15 @@ module "ecs" {
 
       subnet_ids = module.vpc.private_subnets
       security_group_ingress_rules = {
-        alb_3000 = {
-          description                  = "Service port"
-          from_port                    = 8080
-          ip_protocol                  = "tcp"
-          referenced_security_group_id =  module.alb.security_group_id
+        alb_8080 = {
+          from_port   = 8080
+          to_port     = 8080
+          ip_protocol = "tcp"
+          referenced_security_group_id = module.alb.security_group_id
         }
       }
       security_group_egress_rules = {
-        all = {
-          ip_protocol = "-1"
-          cidr_ipv4   = "0.0.0.0/0"
-        }
+        all = { ip_protocol = "-1", cidr_ipv4 = "0.0.0.0/0" }
       }
     }
   }
