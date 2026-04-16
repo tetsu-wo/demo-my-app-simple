@@ -138,7 +138,7 @@ module "ecs" {
       # Container definition(s)
       container_definitions = {
 
-        fluent-bit = {
+      /* fluent-bit = {
           cpu       = 512
           memory    = 1024
           essential = true
@@ -147,7 +147,7 @@ module "ecs" {
             type = "fluentbit"
           }
           memoryReservation = 50
-        }
+        } */
 
         frontend-app = {
           cpu       = 512
@@ -163,7 +163,7 @@ module "ecs" {
           ]
 
           # Example image used requires access to write to root filesystem
-          readonly_root_filesystem = false
+         /* readonly_root_filesystem = false
 
           dependencies = [{
             container_name = "fluent-bit"
@@ -181,7 +181,7 @@ module "ecs" {
             }
           }
           memory_reservation = 100
-        }
+        } */
       }
 
       # 外部（インターネット）からのリクエストを受けるなら基本はALB
@@ -230,7 +230,7 @@ module "ecs" {
       # Container definition(s)
       container_definitions = {
 
-        fluent-bit = {
+       /* fluent-bit = {
           cpu       = 512
           memory    = 1024
           essential = true
@@ -239,7 +239,7 @@ module "ecs" {
             type = "fluentbit"
           }
           memoryReservation = 50
-        }
+        } */
 
         backend-app = {
           cpu       = 512
@@ -255,7 +255,7 @@ module "ecs" {
           ]
 
           # Example image used requires access to write to root filesystem
-          readonly_root_filesystem = false
+        /* readonly_root_filesystem = false
 
           dependencies = [{
             container_name = "fluent-bit"
@@ -273,7 +273,7 @@ module "ecs" {
             }
           }
           memory_reservation = 100
-        }
+        } */
       }
 
       # 外部（インターネット）からのリクエストを受けるなら基本はALB
