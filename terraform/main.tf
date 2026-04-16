@@ -191,17 +191,17 @@ module "ecs" {
         service = [{
           client_alias = {
             port     = 80
-            dns_name = "ecs-sample"
+            dns_name = "frontend-api"
           }
-          port_name      = "ecs-sample"
-          discovery_name = "ecs-sample"
+          port_name      = "frontend-app"
+          discovery_name = "frontend"
         }]
       }
 
       load_balancer = {
         service = {
           target_group_arn = module.alb.target_groups["frontend"].arn
-          container_name   = "ecs-sample"
+          container_name   = "frontend-app"
           container_port   = 3000
         }
       }
@@ -283,17 +283,17 @@ module "ecs" {
         service = [{
           client_alias = {
             port     = 80
-            dns_name = "ecs-sample"
+            dns_name = "backend-api"
           }
-          port_name      = "ecs-sample"
-          discovery_name = "ecs-sample"
+          port_name      = "backend-app"
+          discovery_name = "backend"
         }]
       }
 
       load_balancer = {
         service = {
           target_group_arn = module.alb.target_groups["backend"].arn
-          container_name   = "ecs-sample"
+          container_name   = "backend-app"
           container_port   = 8080
         }
       }
@@ -321,6 +321,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
