@@ -130,9 +130,9 @@ module "ecs" {
       cpu    = 1024
       memory = 4096
       container_definitions = {
-        frontend-app = {
+        frontend = {
       image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
-      container_name = "frontend-app"
+      container_name = "frontend"
       
 
     # ログ設定をコンテナ定義の中に移動（正しい階層）
@@ -148,7 +148,7 @@ module "ecs" {
         }}
         port_mappings = [
         {
-          name          = "frontend-app"
+          name          = "frontend"
           container_port = 3000
           protocol      = "tcp"
         }
@@ -160,7 +160,7 @@ module "ecs" {
       namespace = aws_service_discovery_http_namespace.this.name
       service = [{
         client_alias   = { port = 80, dns_name = "frontend-api" }
-        port_name      = "frontend-app"
+        port_name      = "frontend"
         discovery_name = "frontend"
       }]
     }
@@ -168,7 +168,7 @@ module "ecs" {
     load_balancer = {
       service = {
         target_group_arn = module.alb.target_groups["frontend"].arn
-        container_name   = "frontend-app"
+        container_name   = "frontend"
         container_port   = 3000
       }
     }
@@ -192,10 +192,10 @@ module "ecs" {
       cpu    = 1024
       memory = 4096
       container_definitions = {
-        backend-app = {
+        backend = {
       
       image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
-      container_name = "backend-app"
+      container_name = "backend"
       
       # ログ設定をコンテナ定義の中に移動（正しい階層）
       enable_cloudwatch_logging = true
@@ -211,7 +211,7 @@ module "ecs" {
 
         port_mappings = [
         {
-          name          = "backend-app"
+          name          = "backend"
           container_port = 8080
           protocol      = "tcp"
         }
@@ -223,7 +223,7 @@ module "ecs" {
         namespace = aws_service_discovery_http_namespace.this.name
         service = [{
           client_alias   = { port = 80, dns_name = "backend-api" }
-          port_name      = "backend-app"
+          port_name      = "backend"
           discovery_name = "backend"
         }]
       }
@@ -231,7 +231,7 @@ module "ecs" {
       load_balancer = {
         service = {
           target_group_arn = module.alb.target_groups["backend"].arn
-          container_name   = "backend-app"
+          container_name   = "backend"
           container_port   = 8080
         }
       }
