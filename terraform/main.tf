@@ -138,17 +138,6 @@ module "ecs" {
       # Container definition(s)
       container_definitions = {
 
-      /* fluent-bit = {
-          cpu       = 512
-          memory    = 1024
-          essential = true
-          image     = "906394416424.dkr.ecr.us-west-2.amazonaws.com/aws-for-fluent-bit:stable"
-          firelens_configuration = {
-            type = "fluentbit"
-          }
-          memoryReservation = 50
-        } */
-
         frontend-app = {
           cpu       = 512
           memory    = 1024
@@ -162,26 +151,20 @@ module "ecs" {
             }
           ]
 
-          # Example image used requires access to write to root filesystem
-         /* readonly_root_filesystem = false
-
-          dependencies = [{
-            container_name = "fluent-bit"
-            condition     = "START"
-          }]
-
-          enable_cloudwatch_logging = false
+        # 1. FireLensではなく、標準のCloudWatchログを使う設定にする
+          enable_cloudwatch_logging = true
+        
+        # 2. log_configuration をシンプルに書き換える
           log_configuration = {
-            logDriver = "awsfirelens"
+            log_driver = "awslogs"
             options = {
-              Name                    = "firehose"
-              region                  = "eu-west-1"
-              delivery_stream         = "my-stream"
-              log-driver-buffer-limit = "2097152"
+               "awslogs-group"         = "/aws/ecs/ecs-integrated/frontend" # 好きな名前でOK
+              "awslogs-region"        = "ap-northeast-1"                   # あなたのリージョン
+              "awslogs-stream-prefix" = "ecs"
             }
           }
-          memory_reservation = 100
-        } */
+        
+        }
       }
 
       # 外部（インターネット）からのリクエストを受けるなら基本はALB
@@ -230,17 +213,6 @@ module "ecs" {
       # Container definition(s)
       container_definitions = {
 
-       /* fluent-bit = {
-          cpu       = 512
-          memory    = 1024
-          essential = true
-          image     = "906394416424.dkr.ecr.us-west-2.amazonaws.com/aws-for-fluent-bit:stable"
-          firelens_configuration = {
-            type = "fluentbit"
-          }
-          memoryReservation = 50
-        } */
-
         backend-app = {
           cpu       = 512
           memory    = 1024
@@ -254,26 +226,20 @@ module "ecs" {
             }
           ]
 
-          # Example image used requires access to write to root filesystem
-        /* readonly_root_filesystem = false
-
-          dependencies = [{
-            container_name = "fluent-bit"
-            condition     = "START"
-          }]
-
-          enable_cloudwatch_logging = false
+        # 1. FireLensではなく、標準のCloudWatchログを使う設定にする
+          enable_cloudwatch_logging = true
+        
+        # 2. log_configuration をシンプルに書き換える
           log_configuration = {
-            logDriver = "awsfirelens"
+            log_driver = "awslogs"
             options = {
-              Name                    = "firehose"
-              region                  = "eu-west-1"
-              delivery_stream         = "my-stream"
-              log-driver-buffer-limit = "2097152"
+              "awslogs-group"         = "/aws/ecs/ecs-integrated/backend" # 好きな名前でOK
+              "awslogs-region"        = "ap-northeast-1"                   # あなたのリージョン
+              "awslogs-stream-prefix" = "ecs"
             }
           }
-          memory_reservation = 100
-        } */
+         
+        }
       }
 
       # 外部（インターネット）からのリクエストを受けるなら基本はALB
