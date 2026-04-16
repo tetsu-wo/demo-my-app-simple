@@ -130,93 +130,86 @@ module "ecs" {
       cpu    = 1024
       memory = 4096
 
-      container_definitions = {
-        frontend-app = {
-          cpu       = 512
-          memory    = 1024
-          essential = true
-          image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
-          port_mappings = [
-            {
-              name          = "frontend-app"
-              container_port = 3000
-              protocol      = "tcp"
-            }
-          ]
-          # ログ設定をコンテナ定義の中に移動（正しい階層）
-          enable_cloudwatch_logging = true
-          log_configuration = {
-            log_driver = "awslogs"
-            options = {
-              "awslogs-group"         = "/aws/ecs/ecs-integrated/frontend"
-              "awslogs-region"        = "ap-northeast-1"
-              "awslogs-stream-prefix" = "ecs"
-            }
-          }
+      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
+      container_name = "frontend-app"
+      port_mappings = [
+        {
+          name          = "frontend-app"
+          container_port = 3000
+          protocol      = "tcp"
         }
-      }
+      ]
 
-      service_connect_configuration = {
-        namespace = aws_service_discovery_http_namespace.this.name
-        service = [{
-          client_alias   = { port = 80, dns_name = "frontend-api" }
-          port_name      = "frontend-app"
-          discovery_name = "frontend"
-        }]
-      }
-
-      load_balancer = {
-        service = {
-          target_group_arn = module.alb.target_groups["frontend"].arn
-          container_name   = "frontend-app"
-          container_port   = 3000
-        }
-      }
-
-      subnet_ids = module.vpc.private_subnets
-      security_group_ingress_rules = {
-        alb_3000 = {
-          from_port   = 3000
-          to_port     = 3000
-          ip_protocol = "tcp"
-          referenced_security_group_id = module.alb.security_group_id
-        }
-      }
-      security_group_egress_rules = {
-        all = { ip_protocol = "-1", cidr_ipv4 = "0.0.0.0/0" }
+    # ログ設定をコンテナ定義の中に移動（正しい階層）
+    enable_cloudwatch_logging = true
+    log_configuration = {
+      log_driver = "awslogs"
+      options = {
+        "awslogs-group"         = "/aws/ecs/ecs-integrated/frontend"
+        "awslogs-region"        = "ap-northeast-1"
+        "awslogs-stream-prefix" = "ecs"
       }
     }
+        
+      
+
+    service_connect_configuration = {
+      namespace = aws_service_discovery_http_namespace.this.name
+      service = [{
+        client_alias   = { port = 80, dns_name = "frontend-api" }
+        port_name      = "frontend-app"
+        discovery_name = "frontend"
+      }]
+    }
+
+    load_balancer = {
+      service = {
+        target_group_arn = module.alb.target_groups["frontend"].arn
+        container_name   = "frontend-app"
+        container_port   = 3000
+      }
+    }
+
+    subnet_ids = module.vpc.private_subnets
+    security_group_ingress_rules = {
+      alb_3000 = {
+        from_port   = 3000
+        to_port     = 3000
+        ip_protocol = "tcp"
+        referenced_security_group_id = module.alb.security_group_id
+      }
+    }
+    security_group_egress_rules = {
+      all = { ip_protocol = "-1", cidr_ipv4 = "0.0.0.0/0" }
+    }
+}
 
     # --- バックエンド ---
     backend = {
       cpu    = 1024
       memory = 4096
-
-      container_definitions = {
-        backend-app = {
-          cpu       = 512
-          memory    = 1024
-          essential = true
-          image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
-          port_mappings = [
-            {
-              name          = "backend-app"
-              container_port = 8080
-              protocol      = "tcp"
-            }
-          ]
-          # ログ設定をコンテナ定義の中に移動（正しい階層）
-          enable_cloudwatch_logging = true
-          log_configuration = {
-            log_driver = "awslogs"
-            options = {
-              "awslogs-group"         = "/aws/ecs/ecs-integrated/backend"
-              "awslogs-region"        = "ap-northeast-1"
-              "awslogs-stream-prefix" = "ecs"
-            }
-          }
+      
+      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
+      container_name = "backend-app"
+      port_mappings = [
+        {
+          name          = "backend-app"
+          container_port = 8080
+          protocol      = "tcp"
+        }
+      ]
+      # ログ設定をコンテナ定義の中に移動（正しい階層）
+      enable_cloudwatch_logging = true
+      log_configuration = {
+        log_driver = "awslogs"
+        options = {
+          "awslogs-group"         = "/aws/ecs/ecs-integrated/backend"
+          "awslogs-region"        = "ap-northeast-1"
+          "awslogs-stream-prefix" = "ecs"
         }
       }
+        
+      
 
       service_connect_configuration = {
         namespace = aws_service_discovery_http_namespace.this.name
