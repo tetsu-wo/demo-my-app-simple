@@ -133,13 +133,7 @@ module "ecs" {
         frontend-app = {
       image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
       container_name = "frontend-app"
-      port_mappings = [
-        {
-          name          = "frontend-app"
-          container_port = 3000
-          protocol      = "tcp"
-        }
-      ]
+      
 
     # ログ設定をコンテナ定義の中に移動（正しい階層）
     enable_cloudwatch_logging = true
@@ -152,6 +146,13 @@ module "ecs" {
       }
     }
         }}
+        port_mappings = [
+        {
+          name          = "frontend-app"
+          container_port = 3000
+          protocol      = "tcp"
+        }
+      ]
         
       
 
@@ -195,13 +196,7 @@ module "ecs" {
       
       image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
       container_name = "backend-app"
-      port_mappings = [
-        {
-          name          = "backend-app"
-          container_port = 8080
-          protocol      = "tcp"
-        }
-      ]
+      
       # ログ設定をコンテナ定義の中に移動（正しい階層）
       enable_cloudwatch_logging = true
       log_configuration = {
@@ -213,6 +208,14 @@ module "ecs" {
         }
       }
         }}
+
+        port_mappings = [
+        {
+          name          = "backend-app"
+          container_port = 8080
+          protocol      = "tcp"
+        }
+      ]
         
       
 
