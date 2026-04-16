@@ -154,8 +154,6 @@ module "ecs" {
           memory    = 1024
           essential = true
           image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
-        }
-
           port_mappings = [
             {
               name          = "frontend-app"
@@ -184,7 +182,7 @@ module "ecs" {
           }
           memoryReservation = 100
         }
-      
+      }
 
       # 外部（インターネット）からのリクエストを受けるなら基本はALB
       # システム内部のコンテナ同士の通信を効率化したいならServiceConnect
@@ -248,9 +246,6 @@ module "ecs" {
           memory    = 1024
           essential = true
           image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
-        }
-
-
           port_mappings = [
             {
               name          = "backend-app"
@@ -279,8 +274,7 @@ module "ecs" {
           }
           memoryReservation = 100
         }
-    
-      
+      }
 
       # 外部（インターネット）からのリクエストを受けるなら基本はALB
       # システム内部のコンテナ同士の通信を効率化したいならServiceConnect
@@ -327,7 +321,6 @@ module "ecs" {
     Project     = "Example"
   }
 }
-
 
 
 
