@@ -144,8 +144,7 @@ module "ecs" {
           memory    = 1024
           essential = true
           image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
-        }
-      }
+       
           port_mappings = [
             {
               name          = "frontend-app"
@@ -166,6 +165,8 @@ module "ecs" {
               "awslogs-stream-prefix" = "ecs"
             }
           }
+           }
+      }
         
         
       
@@ -222,8 +223,7 @@ module "ecs" {
           memory    = 1024
           essential = true
           image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
-        }
-      }   
+      
           port_mappings = [
             {
               name          = "backend-app"
@@ -244,7 +244,8 @@ module "ecs" {
               "awslogs-stream-prefix" = "ecs"
             }
           }
-         
+        }
+      }      
         
       
 
