@@ -154,10 +154,10 @@ module "ecs" {
           memory    = 1024
           essential = true
           image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
-          portMappings = [
+          port_mappings = [
             {
               name          = "ecs-sample"
-              containerPort = 3000
+              container_port = 3000
               protocol      = "tcp"
             }
           ]
@@ -246,10 +246,10 @@ module "ecs" {
           memory    = 1024
           essential = true
           image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
-          portMappings = [
+          port_mappings = [
             {
               name          = "ecs-sample"
-              containerPort = 8080
+              container_port = 8080
               protocol      = "tcp"
             }
           ]
@@ -321,6 +321,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
