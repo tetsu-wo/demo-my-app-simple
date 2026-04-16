@@ -134,39 +134,32 @@ module "ecs" {
     frontend = {
       cpu    = 1024
       memory = 4096
-      main_container_name = "frontend-app"
-
-      # Container definition(s)
-      container_definitions = {
-
-        frontend-app = {
-          cpu       = 512
-          memory    = 1024
-          essential = true
-          image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
+     
+      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
+      container_name = "frontend-app"
        
-          port_mappings = [
-            {
-              name          = "frontend-app"
-              container_port = 3000
-              protocol      = "tcp"
-            }
-          ]
+      port_mappings = [
+        {
+          name          = "frontend-app"
+          container_port = 3000
+          protocol      = "tcp"
+        }
+      ]
 
-        # 1. FireLensではなく、標準のCloudWatchログを使う設定にする
-          enable_cloudwatch_logging = true
-        
-        # 2. log_configuration をシンプルに書き換える
-          log_configuration = {
-            log_driver = "awslogs"
-            options = {
-               "awslogs-group"         = "/aws/ecs/ecs-integrated/frontend" # 好きな名前でOK
-              "awslogs-region"        = "ap-northeast-1"                   # あなたのリージョン
-              "awslogs-stream-prefix" = "ecs"
-            }
-          }
-           }
+    # 1. FireLensではなく、標準のCloudWatchログを使う設定にする
+      enable_cloudwatch_logging = true
+    
+    # 2. log_configuration をシンプルに書き換える
+      log_configuration = {
+        log_driver = "awslogs"
+        options = {
+            "awslogs-group"         = "/aws/ecs/ecs-integrated/frontend" # 好きな名前でOK
+          "awslogs-region"        = "ap-northeast-1"                   # あなたのリージョン
+          "awslogs-stream-prefix" = "ecs"
+        }
       }
+        }
+  }
         
         
       
@@ -213,39 +206,32 @@ module "ecs" {
     backend = {
       cpu    = 1024
       memory = 4096
-      main_container_name = "backend-app"
+    
+      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
+      container_name = "backend-app"
 
-      # Container definition(s)
-      container_definitions = {
-
-        backend-app = {
-          cpu       = 512
-          memory    = 1024
-          essential = true
-          image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
-      
-          port_mappings = [
-            {
-              name          = "backend-app"
-              container_port = 8080
-              protocol      = "tcp"
-            }
-          ]
-
-        # 1. FireLensではなく、標準のCloudWatchログを使う設定にする
-          enable_cloudwatch_logging = true
-        
-        # 2. log_configuration をシンプルに書き換える
-          log_configuration = {
-            log_driver = "awslogs"
-            options = {
-              "awslogs-group"         = "/aws/ecs/ecs-integrated/backend" # 好きな名前でOK
-              "awslogs-region"        = "ap-northeast-1"                   # あなたのリージョン
-              "awslogs-stream-prefix" = "ecs"
-            }
-          }
+      port_mappings = [
+        {
+          name          = "backend-app"
+          container_port = 8080
+          protocol      = "tcp"
         }
-      }      
+      ]
+
+    # 1. FireLensではなく、標準のCloudWatchログを使う設定にする
+      enable_cloudwatch_logging = true
+    
+    # 2. log_configuration をシンプルに書き換える
+      log_configuration = {
+        log_driver = "awslogs"
+        options = {
+          "awslogs-group"         = "/aws/ecs/ecs-integrated/backend" # 好きな名前でOK
+          "awslogs-region"        = "ap-northeast-1"                   # あなたのリージョン
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+        
         
       
 
