@@ -55,19 +55,39 @@ module "alb" {
       port     = 80
       protocol = "HTTP"
       forward  = {
-        target_group_key = "ecs-target"
+        target_group_key = "frontend"
+
+        # パスベースの振り分けルール（/api/はJavaへ）
+        rules = {
+          api_routing = {
+            actions = [{
+              type = "forward"
+              target_group_key = "backend"
+            }]
+            conditions = [{
+              path.pattern = {values = ["/api/*"]}
+            }]
+          }
+        }  
       }
     }
   }
 
   target_groups = {
-    ecs-target = {
+    frontend = {
       backend_protocol = "HTTP"
-      backend_port     = 8080 # アプリのポート
+      backend_port     = 3000
       target_type      = "ip"
+      health_check     = { path = "/"}
 
       # ECSサービス側でALBと紐付けるため、ALBモジュール側でのターゲット指定は不要です
-      create_attachment = false 
+      # create_attachment = false 
+    }
+    backend = {
+      backend_protocol = "HTTP"
+      backend_port     = 8080
+      target_type      = "ip"
+      health_check     = { path = "/api/health"}
     }
   }
 }
@@ -103,7 +123,7 @@ module "ecs" {
   }
 
   services = {
-    ecsdemo-frontend = {
+    frontend = {
       cpu    = 1024
       memory = 4096
 
@@ -125,11 +145,11 @@ module "ecs" {
           cpu       = 512
           memory    = 1024
           essential = true
-          image     = "public.ecr.aws/aws-containers/ecsdemo-frontend:776fd50"
+          image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
           portMappings = [
             {
               name          = "ecs-sample"
-              containerPort = 80
+              containerPort = 3000
               protocol      = "tcp"
             }
           ]
@@ -172,9 +192,9 @@ module "ecs" {
 
       load_balancer = {
         service = {
-          target_group_arn = module.alb.target_groups["ecs-target"].arn
+          target_group_arn = module.alb.target_groups["frontend"].arn
           container_name   = "ecs-sample"
-          container_port   = 80
+          container_port   = 3000
         }
       }
 
@@ -182,7 +202,99 @@ module "ecs" {
       security_group_ingress_rules = {
         alb_3000 = {
           description                  = "Service port"
-          from_port                    = local.container_port
+          from_port                    = 3000
+          ip_protocol                  = "tcp"
+          referenced_security_group_id =  module.alb.security_group_id
+        }
+      }
+      security_group_egress_rules = {
+        all = {
+          ip_protocol = "-1"
+          cidr_ipv4   = "0.0.0.0/0"
+        }
+      }
+    }
+
+    backend = {
+      cpu    = 1024
+      memory = 4096
+
+      # Container definition(s)
+      container_definitions = {
+
+        fluent-bit = {
+          cpu       = 512
+          memory    = 1024
+          essential = true
+          image     = "906394416424.dkr.ecr.us-west-2.amazonaws.com/aws-for-fluent-bit:stable"
+          firelensConfiguration = {
+            type = "fluentbit"
+          }
+          memoryReservation = 50
+        }
+
+        ecs-sample = {
+          cpu       = 512
+          memory    = 1024
+          essential = true
+          image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
+          portMappings = [
+            {
+              name          = "ecs-sample"
+              containerPort = 8080
+              protocol      = "tcp"
+            }
+          ]
+
+          # Example image used requires access to write to root filesystem
+          readonlyRootFilesystem = false
+
+          dependsOn = [{
+            containerName = "fluent-bit"
+            condition     = "START"
+          }]
+
+          enable_cloudwatch_logging = false
+          logConfiguration = {
+            logDriver = "awsfirelens"
+            options = {
+              Name                    = "firehose"
+              region                  = "eu-west-1"
+              delivery_stream         = "my-stream"
+              log-driver-buffer-limit = "2097152"
+            }
+          }
+          memoryReservation = 100
+        }
+      }
+
+      # 外部（インターネット）からのリクエストを受けるなら基本はALB
+      # システム内部のコンテナ同士の通信を効率化したいならServiceConnect
+      service_connect_configuration = {
+        namespace = aws_service_discovery_http_namespace.this.name
+        service = [{
+          client_alias = {
+            port     = 80
+            dns_name = "ecs-sample"
+          }
+          port_name      = "ecs-sample"
+          discovery_name = "ecs-sample"
+        }]
+      }
+
+      load_balancer = {
+        service = {
+          target_group_arn = module.alb.target_groups["backend"].arn
+          container_name   = "ecs-sample"
+          container_port   = 8080
+        }
+      }
+
+      subnet_ids = module.vpc.private_subnets
+      security_group_ingress_rules = {
+        alb_3000 = {
+          description                  = "Service port"
+          from_port                    = 8080
           ip_protocol                  = "tcp"
           referenced_security_group_id =  module.alb.security_group_id
         }
@@ -201,6 +313,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
