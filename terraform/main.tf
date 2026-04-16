@@ -78,15 +78,21 @@ module "alb" {
       backend_protocol = "HTTP"
       backend_port     = 3000
       target_type      = "ip"
-      health_check     = { path = "/"}
 
-      # ECSサービス側でALBと紐付けるため、ALBモジュール側でのターゲット指定は不要です
-      # create_attachment = false 
+    # ECSサービス側でALBと紐付けるため、ALBモジュール側でのターゲット指定は不要です
+      create_attachment = false
+
+      health_check     = { path = "/"}
     }
+
     backend = {
       backend_protocol = "HTTP"
       backend_port     = 8080
       target_type      = "ip"
+
+    # ECSサービス側でALBと紐付けるため、ALBモジュール側でのターゲット指定は不要です
+      create_attachment = false
+
       health_check     = { path = "/api/health"}
     }
   }
@@ -313,6 +319,7 @@ module "ecs" {
     Project     = "Example"
   }
 }
+
 
 
 
