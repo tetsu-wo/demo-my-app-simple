@@ -37,6 +37,14 @@ import {
   id = "/aws/ecs/ex-terraform/fluent-bit"
 }
 
+terraform {
+  backend "s3" {
+    bucket = "your-terraform-state-bucket" # 事前に作ったS3バケット名
+    key    = "ecs-project/terraform.tfstate"
+    region = "ap-northeast-1"
+  }
+}
+
 ################################################################################
 # Cluster
 ################################################################################
@@ -610,5 +618,6 @@ module "vpc" {
 
   tags = local.tags
 }
+
 
 
