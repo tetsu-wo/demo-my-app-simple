@@ -336,6 +336,7 @@ module "ecs_service_backend" {
       {
         client_alias = {
           port     = local.backend_container_port
+          # dns_name = local.backend_container_name
           dns_name = local.backend_container_name
         }
         port_name      = local.backend_container_name
@@ -363,7 +364,8 @@ module "ecs_service_backend" {
   security_group_ingress_rules = {
     alb_3000 = {
       description                  = "Service port"
-      from_port                    = local.backend_container_port
+      # from_port                    = local.backend_container_port
+      from_port                    = 3000
       ip_protocol                  = "tcp"
       referenced_security_group_id = module.ecs_service_frontend.security_group_id
     }
@@ -613,6 +615,7 @@ module "vpc" {
 
   tags = local.tags
 }
+
 
 
 
