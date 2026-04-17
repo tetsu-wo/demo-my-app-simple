@@ -23,7 +23,7 @@ locals {
 
   # バックエンド
   backend_container_name = "ecsdemo-backend"
-  backend_container_port = 8080
+  backend_container_port = 3000
 
   tags = {
     Name       = local.name
@@ -364,8 +364,7 @@ module "ecs_service_backend" {
   security_group_ingress_rules = {
     alb_3000 = {
       description                  = "Service port"
-      # from_port                    = local.backend_container_port
-      from_port                    = 3000
+      from_port                    = local.backend_container_port
       ip_protocol                  = "tcp"
       referenced_security_group_id = module.ecs_service_frontend.security_group_id
     }
@@ -615,7 +614,6 @@ module "vpc" {
 
   tags = local.tags
 }
-
 
 
 
