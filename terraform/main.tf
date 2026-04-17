@@ -72,7 +72,7 @@ module "ecs_cluster" {
 module "ecs_service_frontend" {
   source = "./modules/service"
 
-  name        = local.name
+  name        = "${local.name}-front"
   cluster_arn = module.ecs_cluster.arn
 
   cpu    = 1024
@@ -229,7 +229,7 @@ module "ecs_service_frontend" {
 module "ecs_service_backend" {
   source = "./modules/service"
 
-  name        = local.name
+  name        = "${local.name}-back"
   cluster_arn = module.ecs_cluster.arn
 
   cpu    = 1024
@@ -613,6 +613,7 @@ module "vpc" {
 
   tags = local.tags
 }
+
 
 
 
