@@ -32,11 +32,6 @@ locals {
   }
 }
 
-import {
-  to = module.ecs_service_backend.module.container_definition["fluent-bit"].aws_cloudwatch_log_group.this[0]
-  id = "/aws/ecs/ex-terraform/fluent-bit"
-}
-
 terraform {
   backend "s3" {
     bucket = "demo-myapp-simple-938868825847-ap-northeast-1-an" # 事前に作ったS3バケット名
@@ -618,6 +613,7 @@ module "vpc" {
 
   tags = local.tags
 }
+
 
 
 
