@@ -32,6 +32,11 @@ locals {
   }
 }
 
+import {
+  to = module.ecs_service_backend.module.container_definition["fluent-bit"].aws_cloudwatch_log_group.this[0]
+  id = "/aws/ecs/ex-terraform/fluent-bit"
+}
+
 ################################################################################
 # Cluster
 ################################################################################
@@ -605,4 +610,5 @@ module "vpc" {
 
   tags = local.tags
 }
+
 
