@@ -1,287 +1,608 @@
-terraform {
-  backend "s3" {
-    bucket = "demo-myapp-simple-938868825847-ap-northeast-1-an"
-    key    = "ecs-demo/terraform.tfstate" # 保存されるファイル名（任意）
-    region = "ap-northeast-1"
+provider "aws" {
+  region = local.region
+}
+
+data "aws_availability_zones" "available" {
+  # Exclude local zones
+  filter {
+    name   = "opt-in-status"
+    values = ["opt-in-not-required"]
   }
 }
 
-# これが「名前空間」を作る本体です
+locals {
+  region = "ap-northeast-1"
+  name   = "ex-${basename(path.cwd)}"
+
+  vpc_cidr = "10.0.0.0/16"
+  azs      = slice(data.aws_availability_zones.available.names, 0, 3)
+
+  # フロントエンド
+  frontend_container_name = "ecsdemo-frontend"
+  frontend_container_port = 3000
+
+  # バックエンド
+  backend_container_name = "ecsdemo-backend"
+  backend_container_port = 8080
+
+  tags = {
+    Name       = local.name
+    Example    = local.name
+    Repository = "https://github.com/terraform-aws-modules/terraform-aws-ecs"
+  }
+}
+
+################################################################################
+# Cluster
+################################################################################
+
+module "ecs_cluster" {
+  source = "./modules/cluster"
+
+  name = local.name
+
+  # Capacity provider
+  cluster_capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+  default_capacity_provider_strategy = {
+    FARGATE = {
+      weight = 50
+      base   = 20
+    }
+    FARGATE_SPOT = {
+      weight = 50
+    }
+  }
+
+  tags = local.tags
+}
+
+################################################################################
+# Service
+################################################################################
+
+# フロントエンド
+module "ecs_service_frontend" {
+  source = "./modules/service"
+
+  name        = local.name
+  cluster_arn = module.ecs_cluster.arn
+
+  cpu    = 1024
+  memory = 4096
+
+  # Enables ECS Exec
+  enable_execute_command = true
+
+  # Blue/green deployment
+  deployment_configuration = {
+    strategy             = "BLUE_GREEN"
+    bake_time_in_minutes = 2
+
+    # # Example config using lifecycle hooks
+    # lifecycle_hook = {
+    #   success = {
+    #     hook_target_arn  = aws_lambda_function.hook_success.arn
+    #     role_arn         = aws_iam_role.global.arn
+    #     lifecycle_stages = ["POST_SCALE_UP", "POST_TEST_TRAFFIC_SHIFT"]
+    #     hook_details     = jsonencode("test")
+    #   }
+    #   failure = {
+    #     hook_target_arn  = aws_lambda_function.hook_failure.arn
+    #     role_arn         = aws_iam_role.global.arn
+    #     lifecycle_stages = ["TEST_TRAFFIC_SHIFT", "POST_PRODUCTION_TRAFFIC_SHIFT"]
+    #   }
+    # }
+  }
+
+  # Container definition(s)
+  container_definitions = {
+
+    fluent-bit = {
+      cpu       = 512
+      memory    = 1024
+      essential = true
+      image     = nonsensitive(data.aws_ssm_parameter.fluentbit.value)
+      firelensConfiguration = {
+        type = "fluentbit"
+      }
+      memoryReservation = 50
+      user              = "0"
+    }
+
+    (local.frontend_container_name) = {
+      cpu       = 512
+      memory    = 1024
+      essential = true
+      image     = "public.ecr.aws/aws-containers/ecsdemo-frontend:776fd50"
+      portMappings = [
+        {
+          name          = local.frontend_container_name
+          containerPort = local.frontend_container_port
+          hostPort      = local.frontend_container_port
+          protocol      = "tcp"
+        }
+      ]
+
+      # Example image used requires access to write to root filesystem
+      readonlyRootFilesystem = false
+
+      dependsOn = [{
+        containerName = "fluent-bit"
+        condition     = "START"
+      }]
+
+      enable_cloudwatch_logging = false
+      logConfiguration = {
+        logDriver = "awsfirelens"
+        options = {
+          Name                    = "stdout"
+          log-driver-buffer-limit = "2097152"
+        }
+      }
+
+      linuxParameters = {
+        capabilities = {
+          add = []
+          drop = [
+            "NET_RAW"
+          ]
+        }
+      }
+
+      restartPolicy = {
+        enabled              = true
+        ignoredExitCodes     = [1]
+        restartAttemptPeriod = 60
+      }
+
+      # Not required for fluent-bit, just an example
+      volumesFrom = [{
+        sourceContainer = "fluent-bit"
+        readOnly        = false
+      }]
+
+      memoryReservation = 100
+    }
+  }
+
+  service_connect_configuration = {
+    namespace = aws_service_discovery_http_namespace.this.arn
+    # service = [
+    #   {
+    #     client_alias = {
+    #       port     = local.frontend_container_port
+    #       dns_name = local.frontend_container_name
+    #     }
+    #     port_name      = local.frontend_container_name
+    #     discovery_name = local.frontend_container_name
+    #   }
+    # ]
+  }
+
+  load_balancer = {
+    service = {
+      target_group_arn = module.alb.target_groups["ex-ecs"].arn
+      container_name   = local.frontend_container_name
+      container_port   = local.frontend_container_port
+
+      # for blue/green deployments
+      advanced_configuration = {
+        alternate_target_group_arn = module.alb.target_groups["ex-ecs-alternate"].arn
+        production_listener_rule   = module.alb.listener_rules["ex-http/production"].arn
+        test_listener_rule         = module.alb.listener_rules["ex-http/test"].arn
+      }
+    }
+  }
+
+  subnet_ids = module.vpc.private_subnets
+  security_group_ingress_rules = {
+    alb_3000 = {
+      description                  = "Service port"
+      from_port                    = local.frontend_container_port
+      ip_protocol                  = "tcp"
+      referenced_security_group_id = module.alb.security_group_id
+    }
+  }
+  security_group_egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "0.0.0.0/0"
+    }
+  }
+
+  service_tags = {
+    "ServiceTag" = "Tag on service level"
+  }
+
+  tags = local.tags
+}
+
+# バックエンド
+module "ecs_service_backend" {
+  source = "./modules/service"
+
+  name        = local.name
+  cluster_arn = module.ecs_cluster.arn
+
+  cpu    = 1024
+  memory = 4096
+
+  # Enables ECS Exec
+  enable_execute_command = true
+
+  # Blue/green deployment
+  deployment_configuration = {
+    strategy             = "BLUE_GREEN"
+    bake_time_in_minutes = 2
+
+    # # Example config using lifecycle hooks
+    # lifecycle_hook = {
+    #   success = {
+    #     hook_target_arn  = aws_lambda_function.hook_success.arn
+    #     role_arn         = aws_iam_role.global.arn
+    #     lifecycle_stages = ["POST_SCALE_UP", "POST_TEST_TRAFFIC_SHIFT"]
+    #     hook_details     = jsonencode("test")
+    #   }
+    #   failure = {
+    #     hook_target_arn  = aws_lambda_function.hook_failure.arn
+    #     role_arn         = aws_iam_role.global.arn
+    #     lifecycle_stages = ["TEST_TRAFFIC_SHIFT", "POST_PRODUCTION_TRAFFIC_SHIFT"]
+    #   }
+    # }
+  }
+
+  # Container definition(s)
+  container_definitions = {
+
+    fluent-bit = {
+      cpu       = 512
+      memory    = 1024
+      essential = true
+      image     = nonsensitive(data.aws_ssm_parameter.fluentbit.value)
+      firelensConfiguration = {
+        type = "fluentbit"
+      }
+      memoryReservation = 50
+      user              = "0"
+    }
+
+    (local.backend_container_name) = {
+      cpu       = 512
+      memory    = 1024
+      essential = true
+      image     = "public.ecr.aws/aws-containers/ecsdemo-frontend:776fd50"
+      portMappings = [
+        {
+          name          = local.backend_container_name
+          containerPort = local.backend_container_port
+          hostPort      = local.backend_container_port
+          protocol      = "tcp"
+        }
+      ]
+
+      # Example image used requires access to write to root filesystem
+      readonlyRootFilesystem = false
+
+      dependsOn = [{
+        containerName = "fluent-bit"
+        condition     = "START"
+      }]
+
+      enable_cloudwatch_logging = false
+      logConfiguration = {
+        logDriver = "awsfirelens"
+        options = {
+          Name                    = "stdout"
+          log-driver-buffer-limit = "2097152"
+        }
+      }
+
+      linuxParameters = {
+        capabilities = {
+          add = []
+          drop = [
+            "NET_RAW"
+          ]
+        }
+      }
+
+      restartPolicy = {
+        enabled              = true
+        ignoredExitCodes     = [1]
+        restartAttemptPeriod = 60
+      }
+
+      # Not required for fluent-bit, just an example
+      volumesFrom = [{
+        sourceContainer = "fluent-bit"
+        readOnly        = false
+      }]
+
+      memoryReservation = 100
+    }
+  }
+
+  service_connect_configuration = {
+    namespace = aws_service_discovery_http_namespace.this.arn
+    service = [
+      {
+        client_alias = {
+          port     = local.backend_container_port
+          dns_name = local.backend_container_name
+        }
+        port_name      = local.backend_container_name
+        discovery_name = local.backend_container_name
+      }
+    ]
+  }
+
+  # load_balancer = {
+  #   service = {
+  #     target_group_arn = module.alb.target_groups["ex-ecs"].arn
+  #     container_name   = local.backend_container_name
+  #     container_port   = local.backend_container_port
+
+  #     # for blue/green deployments
+  #     advanced_configuration = {
+  #       alternate_target_group_arn = module.alb.target_groups["ex-ecs-alternate"].arn
+  #       production_listener_rule   = module.alb.listener_rules["ex-http/production"].arn
+  #       test_listener_rule         = module.alb.listener_rules["ex-http/test"].arn
+  #     }
+  #   }
+  # }
+
+  subnet_ids = module.vpc.private_subnets
+  security_group_ingress_rules = {
+    alb_3000 = {
+      description                  = "Service port"
+      from_port                    = local.backend_container_port
+      ip_protocol                  = "tcp"
+      referenced_security_group_id = module.ecs_service_frontend.security_group_id
+    }
+  }
+  security_group_egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "0.0.0.0/0"
+    }
+  }
+
+  service_tags = {
+    "ServiceTag" = "Tag on service level"
+  }
+
+  tags = local.tags
+}
+
+
+################################################################################
+# Standalone Task Definition (w/o Service)
+################################################################################
+
+module "ecs_task_definition" {
+  source = "./modules/service"
+
+  # Service
+  name           = "${local.name}-standalone"
+  cluster_arn    = module.ecs_cluster.arn
+  create_service = false
+
+  # Task Definition
+  volume = {
+    ex-vol = {}
+  }
+
+  runtime_platform = {
+    cpu_architecture        = "ARM64"
+    operating_system_family = "LINUX"
+  }
+
+  # Container definition(s)
+  container_definitions = {
+    al2023 = {
+      image = "public.ecr.aws/amazonlinux/amazonlinux:2023-minimal"
+
+      mountPoints = [
+        {
+          sourceVolume  = "ex-vol",
+          containerPath = "/var/www/ex-vol"
+        }
+      ]
+
+      command    = ["echo hello world"]
+      entrypoint = ["/usr/bin/sh", "-c"]
+    }
+  }
+
+  subnet_ids = module.vpc.private_subnets
+
+  security_group_egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "0.0.0.0/0"
+    }
+  }
+
+  tags = local.tags
+}
+
+################################################################################
+# Supporting Resources
+################################################################################
+
+data "aws_ssm_parameter" "fluentbit" {
+  name = "/aws/service/aws-for-fluent-bit/stable"
+}
+
 resource "aws_service_discovery_http_namespace" "this" {
-  name        = "example"
-  description = "Cloud Map namespace for ECS Service Connect"
+  name        = local.name
+  description = "CloudMap namespace for ${local.name}"
+  tags        = local.tags
 }
 
-
-# 1. VPCモジュール：ネットワークを作る
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.0"
-
-  name = "my-vpc"
-  cidr = "10.0.0.0/16"
-
-  azs             = ["ap-northeast-1a", "ap-northeast-1c"]
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
-
-  enable_nat_gateway = true
-  single_nat_gateway = true # コスト削減のため
-}
-
-
-# 2. ALBモジュール：受け口を作る（module.alb が必要だった理由）
 module "alb" {
   source  = "terraform-aws-modules/alb/aws"
-  version = "~> 9.0"
+  version = "~> 10.0"
 
-  name    = "my-alb"
+  name = local.name
+
+  load_balancer_type = "application"
+
   vpc_id  = module.vpc.vpc_id
   subnets = module.vpc.public_subnets
 
-  security_group_ingress_rules = {
-  all_http = {
-    from_port   = 80
-    to_port     = 80
-    ip_protocol = "tcp"
-    description = "HTTP web traffic"
-    cidr_ipv4   = "0.0.0.0/0"
-  } 
-}
+  # For example only
+  enable_deletion_protection = false
 
-  # 外部からポート80でアクセス
+  # Security Group
+  security_group_ingress_rules = {
+    all_http = {
+      from_port   = 80
+      to_port     = 80
+      ip_protocol = "tcp"
+      cidr_ipv4   = "0.0.0.0/0"
+    }
+  }
+  security_group_egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = module.vpc.vpc_cidr_block
+    }
+  }
+
   listeners = {
-    http = {
+    ex-http = {
       port     = 80
       protocol = "HTTP"
-      forward  = {
-        target_group_key = "frontend"
 
-        # パスベースの振り分けルール（/api/はJavaへ）
-        rules = {
-          api_routing = {
-            actions = [{
-              type = "forward"
-              target_group_key = "backend"
-            }]
-            conditions = [{
-              path_pattern = {values = ["/api/*"]}
-            }]
-          }
-        }  
+      fixed_response = {
+        content_type = "text/plain"
+        message_body = "404: Page not found"
+        status_code  = "404"
+      }
+
+      # for blue/green deployments
+      rules = {
+        production = {
+          priority = 1
+          actions = [
+            {
+              weighted_forward = {
+                target_groups = [
+                  {
+                    target_group_key = "ex-ecs"
+                    weight           = 100
+                  },
+                  {
+                    target_group_key = "ex-ecs-alternate"
+                    weight           = 0
+                  }
+                ]
+              }
+            }
+          ]
+          conditions = [
+            {
+              path_pattern = {
+                values = ["/*"]
+              }
+            }
+          ]
+        }
+        test = {
+          priority = 2
+          actions = [
+            {
+              weighted_forward = {
+                target_groups = [
+                  {
+                    target_group_key = "ex-ecs-alternate"
+                    weight           = 100
+                  }
+                ]
+              }
+            }
+          ]
+          conditions = [
+            {
+              path_pattern = {
+                values = ["/*"]
+              }
+            }
+          ]
+        }
       }
     }
   }
 
   target_groups = {
-    frontend = {
-      backend_protocol = "HTTP"
-      backend_port     = 3000
-      target_type      = "ip"
+    ex-ecs = {
+      backend_protocol                  = "HTTP"
+      backend_port                      = local.backend_container_port
+      target_type                       = "ip"
+      deregistration_delay              = 5
+      load_balancing_cross_zone_enabled = true
 
-    # ECSサービス側でALBと紐付けるため、ALBモジュール側でのターゲット指定は不要です
+      health_check = {
+        enabled             = true
+        healthy_threshold   = 5
+        interval            = 30
+        matcher             = "200"
+        path                = "/"
+        port                = "traffic-port"
+        protocol            = "HTTP"
+        timeout             = 5
+        unhealthy_threshold = 2
+      }
+
+      # There's nothing to attach here in this definition. Instead,
+      # ECS will attach the IPs of the tasks to this target group
       create_attachment = false
-
-      health_check     = { path = "/"}
     }
 
-    backend = {
-      backend_protocol = "HTTP"
-      backend_port     = 8080
-      target_type      = "ip"
+    # for blue/green deployments
+    ex-ecs-alternate = {
+      backend_protocol                  = "HTTP"
+      backend_port                      = local.backend_container_port
+      target_type                       = "ip"
+      deregistration_delay              = 5
+      load_balancing_cross_zone_enabled = true
 
-    # ECSサービス側でALBと紐付けるため、ALBモジュール側でのターゲット指定は不要です
+      health_check = {
+        enabled             = true
+        healthy_threshold   = 5
+        interval            = 30
+        matcher             = "200"
+        path                = "/"
+        port                = "traffic-port"
+        protocol            = "HTTP"
+        timeout             = 5
+        unhealthy_threshold = 2
+      }
+
+      # There's nothing to attach here in this definition. Instead,
+      # ECS will attach the IPs of the tasks to this target group
       create_attachment = false
-
-      health_check     = { path = "/api/health"}
     }
   }
+
+  tags = local.tags
 }
 
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 6.0"
 
+  name = local.name
+  cidr = local.vpc_cidr
 
+  azs             = local.azs
+  private_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 4, k)]
+  public_subnets  = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 48)]
 
-# 3. ECSモジュール：アプリの器を作る
-module "ecs" {
-  source  = "terraform-aws-modules/ecs/aws"
-  version = "6.0.0"
+  enable_nat_gateway = true
+  single_nat_gateway = true
 
-  cluster_name = "ecs-integrated"
-
-  cluster_configuration = {
-    execute_command_configuration = {
-      logging = "OVERRIDE"
-      log_configuration = {
-        cloud_watch_log_group_name = "/aws/ecs/aws-ec2"
-      }
-    }
-  }
-
-  default_capacity_provider_strategy = {
-    FARGATE      = { weight = 50, base = 20 }
-    FARGATE_SPOT = { weight = 50 }
-  }
-
-  depends_on = [module.alb]
-
-  services = {
-    # --- フロントエンド ---
-    frontend = {
-      cpu    = 1024
-      memory = 4096
-      container_name = "frontend"
-      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-frontend"
-      
-      
-
-    # ログ設定をコンテナ定義の中に移動（正しい階層）
-    enable_cloudwatch_logging = true
-    log_configuration = {
-      log_driver = "awslogs"
-      options = {
-        "awslogs-group"         = "/aws/ecs/ecs-integrated/frontend"
-        "awslogs-region"        = "ap-northeast-1"
-        "awslogs-stream-prefix" = "ecs"
-      }
-    }
-        
-    port_mappings = [
-    {
-      name          = "frontend"
-      container_port = 3000
-      protocol      = "tcp"
-    }
-  ]
-        
-      
-
-    service_connect_configuration = {
-      namespace = aws_service_discovery_http_namespace.this.name
-      service = [{
-        client_alias   = { port = 80, dns_name = "frontend-api" }
-        port_name      = "frontend"
-        discovery_name = "frontend"
-      }]
-    }
-
-    load_balancer = {
-      service = {
-        target_group_arn = module.alb.target_groups["frontend"].arn
-        container_name   = "frontend"
-        container_port   = 3000
-      }
-    }
-
-    subnet_ids = module.vpc.private_subnets
-    security_group_ingress_rules = {
-      alb_3000 = {
-        from_port   = 3000
-        to_port     = 3000
-        ip_protocol = "tcp"
-        referenced_security_group_id = module.alb.security_group_id
-      }
-    }
-    security_group_egress_rules = {
-      all = { ip_protocol = "-1", cidr_ipv4 = "0.0.0.0/0" }
-    }
+  tags = local.tags
 }
-
-    # --- バックエンド ---
-    backend = {
-      cpu    = 1024
-      memory = 4096
-      container_name = "backend"      
-      image     = "938868825847.dkr.ecr.ap-northeast-1.amazonaws.com/my-app-backend"
-      
-      
-      # ログ設定をコンテナ定義の中に移動（正しい階層）
-      enable_cloudwatch_logging = true
-      log_configuration = {
-        log_driver = "awslogs"
-        options = {
-          "awslogs-group"         = "/aws/ecs/ecs-integrated/backend"
-          "awslogs-region"        = "ap-northeast-1"
-          "awslogs-stream-prefix" = "ecs"
-        }
-      }
-        
-
-      port_mappings = [
-      {
-        name          = "backend"
-        container_port = 8080
-        protocol      = "tcp"
-      }
-      ]
-        
-      
-
-      service_connect_configuration = {
-        namespace = aws_service_discovery_http_namespace.this.name
-        service = [{
-          client_alias   = { port = 80, dns_name = "backend-api" }
-          port_name      = "backend"
-          discovery_name = "backend"
-        }]
-      }
-
-      load_balancer = {
-        service = {
-          target_group_arn = module.alb.target_groups["backend"].arn
-          container_name   = "backend"
-          container_port   = 8080
-        }
-      }
-
-      subnet_ids = module.vpc.private_subnets
-      security_group_ingress_rules = {
-        alb_8080 = {
-          from_port   = 8080
-          to_port     = 8080
-          ip_protocol = "tcp"
-          referenced_security_group_id = module.alb.security_group_id
-        }
-      }
-      security_group_egress_rules = {
-        all = { ip_protocol = "-1", cidr_ipv4 = "0.0.0.0/0" }
-      }
-    }
-  }
-
-  tags = {
-    Environment = "Development"
-    Project     = "Example"
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
