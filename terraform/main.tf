@@ -336,7 +336,6 @@ module "ecs_service_backend" {
       {
         client_alias = {
           port     = local.backend_container_port
-          # dns_name = local.backend_container_name
           dns_name = local.backend_container_name
         }
         port_name      = local.backend_container_name
