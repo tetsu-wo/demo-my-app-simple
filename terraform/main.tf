@@ -39,8 +39,8 @@ import {
 
 terraform {
   backend "s3" {
-    bucket = "your-terraform-state-bucket" # 事前に作ったS3バケット名
-    key    = "ecs-project/terraform.tfstate"
+    bucket = "demo-myapp-simple-938868825847-ap-northeast-1-an" # 事前に作ったS3バケット名
+    key    = "demo-my-app-simple/terraform.tfstate"
     region = "ap-northeast-1"
   }
 }
@@ -618,6 +618,7 @@ module "vpc" {
 
   tags = local.tags
 }
+
 
 
 
